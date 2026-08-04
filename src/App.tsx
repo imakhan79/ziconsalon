@@ -24,6 +24,9 @@ import SettingsPage from "@/pages/dashboard/SettingsPage"
 import ProfilePage from "@/pages/dashboard/ProfilePage"
 import MyWorkPage from "@/pages/dashboard/MyWorkPage"
 import StaffHRPage from "@/pages/dashboard/StaffHRPage"
+import POSPage from "@/pages/dashboard/POSPage"
+import RefundsPage from "@/pages/dashboard/RefundsPage"
+import CashClosingPage from "@/pages/dashboard/CashClosingPage"
 import AdminOverviewPage from "@/pages/admin/OverviewPage"
 import BranchesPage from "@/pages/admin/BranchesPage"
 import UsersPage from "@/pages/admin/UsersPage"
@@ -57,6 +60,8 @@ function App() {
                     <Route path="/dashboard/customers" element={<CustomersPage />} />
                     <Route path="/dashboard/billing" element={<BillingPage />} />
                     <Route path="/dashboard/my-work" element={<MyWorkPage />} />
+                    <Route path="/dashboard/pos" element={<POSPage />} />
+                    <Route path="/dashboard/cash-closing" element={<CashClosingPage />} />
                   </Route>
 
                   <Route element={<ProtectedRoute allowedRoles={["admin", "manager"]} />}>
@@ -65,6 +70,7 @@ function App() {
                     <Route path="/dashboard/services" element={<ServicesPage />} />
                     <Route path="/dashboard/inventory" element={<InventoryPage />} />
                     <Route path="/dashboard/finance" element={<FinancePage />} />
+                    <Route path="/dashboard/refunds" element={<RefundsPage />} />
                     <Route path="/dashboard/marketing" element={<MarketingPage />} />
                     <Route path="/dashboard/reports" element={<ReportsPage />} />
                   </Route>

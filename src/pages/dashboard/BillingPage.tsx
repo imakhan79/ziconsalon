@@ -53,6 +53,7 @@ export default function BillingPage() {
   const [branchId, setBranchId] = React.useState("")
   const [discount, setDiscount] = React.useState("0")
   const [tax, setTax] = React.useState("0")
+  const [serviceCharge, setServiceCharge] = React.useState("0")
   const [lines, setLines] = React.useState<LineItem[]>([emptyLine()])
 
   const [viewId, setViewId] = React.useState<string | null>(null)
@@ -101,13 +102,14 @@ export default function BillingPage() {
     (sum, l) => sum + Number(l.quantity || 0) * Number(l.unit_price || 0),
     0
   )
-  const total = Math.max(0, subtotal - Number(discount || 0) + Number(tax || 0))
+  const total = Math.max(0, subtotal - Number(discount || 0) + Number(tax || 0) + Number(serviceCharge || 0))
 
   const resetCreate = () => {
     setCustomerId("")
     setBranchId(defaultBranchId)
     setDiscount("0")
     setTax("0")
+    setServiceCharge("0")
     setLines([emptyLine()])
   }
 
@@ -125,6 +127,7 @@ export default function BillingPage() {
           subtotal,
           discount: Number(discount || 0),
           tax: Number(tax || 0),
+          service_charge: Number(serviceCharge || 0),
           total,
         })
         .select()
@@ -155,6 +158,23 @@ export default function BillingPage() {
       if (!viewInvoice) return
       const amount = Number(paymentAmount)
       if (!amount || amount <= 0) throw new Error("Enter a valid amount")
+
+      if (paymentMethod === "gift_card") {
+        const { error } = await supabase.rpc("redeem_gift_card", {
+          p_code: paymentRef.trim(),
+          p_amount: amount,
+          p_invoice_id: viewInvoice.id,
+        })
+        if (error) throw error
+      } else if (paymentMethod === "store_credit") {
+        if (!viewInvoice.customer_id) throw new Error("Store credit requires a customer account")
+        const { error } = await supabase.rpc("redeem_store_credit", {
+          p_customer_id: viewInvoice.customer_id,
+          p_amount: amount,
+          p_invoice_id: viewInvoice.id,
+        })
+        if (error) throw error
+      }
 
       const tip = Number(paymentTip || 0)
       const { error: payErr } = await supabase.from("payments").insert({
@@ -307,7 +327,7 @@ export default function BillingPage() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="inv-discount">Discount</Label>
                   <Input
@@ -328,6 +348,17 @@ export default function BillingPage() {
                     step="0.01"
                     value={tax}
                     onChange={(e) => setTax(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="inv-service-charge">Service charge</Label>
+                  <Input
+                    id="inv-service-charge"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={serviceCharge}
+                    onChange={(e) => setServiceCharge(e.target.value)}
                   />
                 </div>
               </div>
@@ -384,6 +415,7 @@ export default function BillingPage() {
                 <span>Subtotal: ${Number(viewInvoice.subtotal).toFixed(2)}</span>
                 <span>Discount: -${Number(viewInvoice.discount).toFixed(2)}</span>
                 <span>Tax: +${Number(viewInvoice.tax).toFixed(2)}</span>
+                <span>Service charge: +${Number(viewInvoice.service_charge).toFixed(2)}</span>
                 <span className="font-semibold">Total: ${Number(viewInvoice.total).toFixed(2)}</span>
               </div>
 
@@ -450,8 +482,13 @@ export default function BillingPage() {
                     <SelectContent>
                       <SelectItem value="cash">Cash</SelectItem>
                       <SelectItem value="card">Card</SelectItem>
+                      <SelectItem value="debit_card">Debit card</SelectItem>
+                      <SelectItem value="credit_card">Credit card</SelectItem>
+                      <SelectItem value="online">Online</SelectItem>
                       <SelectItem value="bank_transfer">Bank transfer</SelectItem>
                       <SelectItem value="wallet">Wallet</SelectItem>
+                      <SelectItem value="gift_card">Gift card</SelectItem>
+                      <SelectItem value="store_credit">Store credit</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>

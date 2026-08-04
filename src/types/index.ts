@@ -9,7 +9,17 @@ export type AppointmentStatus =
 
 export type InvoiceStatus = "unpaid" | "partial" | "paid" | "refunded" | "void"
 
-export type PaymentMethod = "cash" | "card" | "bank_transfer" | "wallet" | "other"
+export type PaymentMethod =
+  | "cash"
+  | "card"
+  | "bank_transfer"
+  | "wallet"
+  | "other"
+  | "debit_card"
+  | "credit_card"
+  | "online"
+  | "gift_card"
+  | "store_credit"
 
 export type InventoryTxnType = "purchase" | "sale" | "adjustment" | "return"
 
@@ -185,12 +195,14 @@ export interface Product {
 export interface Invoice {
   id: string
   invoice_number: string
-  customer_id: string
+  customer_id: string | null
+  walk_in_name: string | null
   branch_id: string | null
   appointment_id: string | null
   subtotal: number
   discount: number
   tax: number
+  service_charge: number
   total: number
   status: InvoiceStatus
   created_at: string
@@ -205,9 +217,107 @@ export interface InvoiceItem {
   description: string
   service_id: string | null
   product_id: string | null
+  package_id: string | null
   quantity: number
   unit_price: number
   line_total: number
+}
+
+export interface ServicePackage {
+  id: string
+  branch_id: string | null
+  name: string
+  price: number
+  is_active: boolean
+}
+
+export interface ServicePackageItem {
+  package_id: string
+  service_id: string
+  quantity: number
+}
+
+export interface GiftCard {
+  id: string
+  code: string
+  branch_id: string | null
+  initial_value: number
+  balance: number
+  issued_to: string | null
+  issued_by: string | null
+  is_active: boolean
+  expires_at: string | null
+  created_at: string
+}
+
+export interface GiftCardTransaction {
+  id: string
+  gift_card_id: string
+  invoice_id: string | null
+  amount: number
+  type: "issue" | "redeem" | "adjustment"
+  created_by: string | null
+  created_at: string
+}
+
+export interface StoreCreditTransaction {
+  id: string
+  customer_id: string
+  amount: number
+  reason: string | null
+  invoice_id: string | null
+  refund_id: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export type RefundType = "full" | "partial"
+export type RefundMethod = "original_payment" | "store_credit" | "cash"
+export type RefundStatus = "pending" | "approved" | "rejected"
+
+export interface Refund {
+  id: string
+  invoice_id: string
+  branch_id: string | null
+  amount: number
+  type: RefundType
+  reason: string | null
+  refund_method: RefundMethod
+  status: RefundStatus
+  requested_by: string | null
+  reviewed_by: string | null
+  reviewed_at: string | null
+  credit_note_number: string | null
+  created_at: string
+  invoice?: Invoice
+  requester?: Profile
+}
+
+export type CashSessionStatus = "open" | "closed"
+
+export interface CashSession {
+  id: string
+  branch_id: string
+  opened_by: string | null
+  opened_at: string
+  opening_float: number
+  closed_by: string | null
+  closed_at: string | null
+  counted_cash: number | null
+  bank_deposit_amount: number | null
+  notes: string | null
+  status: CashSessionStatus
+  created_at: string
+}
+
+export interface CommunicationLog {
+  id: string
+  invoice_id: string | null
+  channel: "email" | "whatsapp"
+  recipient: string
+  status: "pending" | "sent" | "failed"
+  created_by: string | null
+  created_at: string
 }
 
 export interface Payment {
