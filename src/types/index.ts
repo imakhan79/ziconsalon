@@ -201,6 +201,50 @@ export interface StaffService {
   service_id: string
 }
 
+export interface LoyaltyTransaction {
+  id: string
+  customer_id: string
+  points: number
+  type: "earn" | "redeem" | "adjustment"
+  reason: string | null
+  invoice_id: string | null
+  created_at: string
+}
+
+export interface MembershipPlan {
+  id: string
+  name: string
+  price: number
+  duration_months: number
+  discount_percent: number
+  priority_booking: boolean
+  benefits: string | null
+  is_active: boolean
+}
+
+export type MembershipStatus = "active" | "expired" | "cancelled"
+
+export interface CustomerMembership {
+  id: string
+  customer_id: string
+  plan_id: string
+  status: MembershipStatus
+  started_at: string
+  expires_at: string
+  invoice_id: string | null
+  plan?: MembershipPlan
+}
+
+export interface Review {
+  id: string
+  customer_id: string
+  appointment_id: string
+  staff_id: string | null
+  rating: number
+  comment: string | null
+  created_at: string
+}
+
 export interface Promotion {
   id: string
   code: string | null

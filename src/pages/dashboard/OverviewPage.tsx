@@ -1,3 +1,4 @@
+import * as React from "react"
 import type { ComponentType } from "react"
 import { Link } from "react-router-dom"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -37,8 +38,28 @@ import {
   UserPlus,
   LogIn,
   CalendarClock,
+  Award,
+  Crown,
+  Tag,
+  Star,
+  History,
+  Sparkles,
 } from "lucide-react"
-import type { AppointmentStatus } from "@/types"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import type {
+  AppointmentStatus,
+  InvoiceStatus,
+  CustomerMembership,
+  MembershipPlan,
+  Promotion,
+} from "@/types"
 
 const STATUS_VARIANT: Record<AppointmentStatus, "default" | "success" | "warning" | "destructive" | "outline"> = {
   pending: "warning",
@@ -57,24 +78,163 @@ export default function OverviewPage() {
   return <CustomerOverview />
 }
 
+const INVOICE_VARIANT: Record<InvoiceStatus, "default" | "success" | "warning" | "destructive" | "outline"> = {
+  unpaid: "warning",
+  partial: "default",
+  paid: "success",
+  refunded: "outline",
+  void: "destructive",
+}
+
 function CustomerOverview() {
   const { profile } = useAuth()
+  const queryClient = useQueryClient()
+  const [reviewTarget, setReviewTarget] = React.useState<{ id: string; staffId: string | null } | null>(null)
+  const [rating, setRating] = React.useState(5)
+  const [comment, setComment] = React.useState("")
 
-  const { data: myAppointments = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["overview-customer", profile?.id],
     enabled: !!profile,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("appointments")
-        .select("id, start_time, status")
-        .eq("customer_id", profile!.id)
-        .order("start_time", { ascending: true })
-      if (error) throw error
-      return data as { id: string; start_time: string; status: string }[]
+      const nowIso = new Date().toISOString()
+
+      const [
+        { data: upcoming },
+        { data: history },
+        { data: invoices },
+        { data: loyaltyTx },
+        { data: membership },
+        { data: plans },
+        { data: offers },
+        { data: myReviews },
+      ] = await Promise.all([
+        supabase
+          .from("appointments")
+          .select(
+            "id, start_time, status, staff:staff(*, profile:profiles(full_name)), items:appointment_items(price, service:services(name))"
+          )
+          .eq("customer_id", profile!.id)
+          .gte("start_time", nowIso)
+          .order("start_time", { ascending: true }),
+        supabase
+          .from("appointments")
+          .select(
+            "id, start_time, status, staff_id, staff:staff(*, profile:profiles(full_name)), items:appointment_items(price, service:services(name))"
+          )
+          .eq("customer_id", profile!.id)
+          .lt("start_time", nowIso)
+          .order("start_time", { ascending: false })
+          .limit(10),
+        supabase
+          .from("invoices")
+          .select("*, payments:payments(*)")
+          .eq("customer_id", profile!.id)
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("loyalty_transactions")
+          .select("*")
+          .eq("customer_id", profile!.id)
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("customer_memberships")
+          .select("*, plan:membership_plans(*)")
+          .eq("customer_id", profile!.id)
+          .eq("status", "active")
+          .order("started_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase.from("membership_plans").select("*").eq("is_active", true).order("price"),
+        supabase
+          .from("promotions")
+          .select("*")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false }),
+        supabase.from("reviews").select("appointment_id").eq("customer_id", profile!.id),
+      ])
+
+      const serviceCounts: Record<string, number> = {}
+      for (const a of [...(upcoming ?? []), ...(history ?? [])]) {
+        for (const item of a.items ?? []) {
+          const name = (item.service as unknown as { name: string } | null)?.name
+          if (name) serviceCounts[name] = (serviceCounts[name] ?? 0) + 1
+        }
+      }
+      const topServices = Object.entries(serviceCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([name]) => name)
+
+      const loyaltyBalance = (loyaltyTx ?? []).reduce((s, t) => s + t.points, 0)
+      const reviewedAppointmentIds = new Set((myReviews ?? []).map((r) => r.appointment_id))
+      const lifetimeSpent = (invoices ?? [])
+        .filter((i) => i.status === "paid")
+        .reduce((s, i) => s + Number(i.total), 0)
+      const activeOffers = (offers ?? []).filter((p: Promotion) => {
+        if (p.ends_at && new Date(p.ends_at) < new Date()) return false
+        if (p.starts_at && new Date(p.starts_at) > new Date()) return false
+        return true
+      })
+
+      return {
+        upcoming: upcoming ?? [],
+        history: history ?? [],
+        invoices: invoices ?? [],
+        loyaltyTx: loyaltyTx ?? [],
+        loyaltyBalance,
+        membership: membership as (CustomerMembership & { plan: MembershipPlan }) | null,
+        plans: (plans ?? []) as MembershipPlan[],
+        activeOffers,
+        topServices,
+        reviewedAppointmentIds,
+        lifetimeSpent,
+      }
     },
   })
 
-  if (isLoading) {
+  const joinMembership = useMutation({
+    mutationFn: async (plan: MembershipPlan) => {
+      const expiresAt = new Date()
+      expiresAt.setMonth(expiresAt.getMonth() + plan.duration_months)
+      const { error } = await supabase.from("customer_memberships").insert({
+        customer_id: profile!.id,
+        plan_id: plan.id,
+        expires_at: expiresAt.toISOString(),
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["overview-customer"] })
+      toast.success("Membership activated — visit the front desk to settle payment.")
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const submitReview = useMutation({
+    mutationFn: async () => {
+      if (!reviewTarget) return
+      const { error } = await supabase.from("reviews").insert({
+        customer_id: profile!.id,
+        appointment_id: reviewTarget.id,
+        staff_id: reviewTarget.staffId,
+        rating,
+        comment: comment || null,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["overview-customer"] })
+      setReviewTarget(null)
+      setRating(5)
+      setComment("")
+      toast.success("Thanks for your feedback!")
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  if (isLoading || !data) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -86,36 +246,255 @@ function CustomerOverview() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="font-display text-2xl font-semibold">
-          Welcome, <span className="text-gradient-luxury">{profile?.full_name}</span>
-        </h1>
-        <p className="text-sm text-muted-foreground">Here's what's coming up for you.</p>
+      <div className="glass-card flex flex-wrap items-center justify-between gap-3 rounded-xl p-5">
+        <div>
+          <h1 className="font-display text-2xl font-semibold">
+            Welcome, <span className="text-gradient-luxury">{profile?.full_name}</span>
+          </h1>
+          <p className="text-sm text-muted-foreground">Here's what's coming up for you.</p>
+        </div>
+        <Button asChild size="sm">
+          <Link to="/dashboard/appointments">
+            <Plus className="size-4" /> Book appointment
+          </Link>
+        </Button>
       </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard icon={CalendarDays} label="Upcoming appointments" value={data.upcoming.length} />
+        <StatCard icon={Award} label="Loyalty points" value={data.loyaltyBalance} accent="gold" />
+        <StatCard icon={Crown} label="Membership" value={data.membership?.plan.name ?? "None"} />
+        <StatCard icon={DollarSign} label="Lifetime spent" value={`$${data.lifetimeSpent.toFixed(2)}`} />
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>Your upcoming appointments</CardTitle>
+          <CardTitle>Upcoming appointments</CardTitle>
         </CardHeader>
-        <CardContent>
-          {myAppointments.length === 0 ? (
+        <CardContent className="flex flex-col gap-2">
+          {data.upcoming.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No appointments yet. Book one from the Appointments tab.
             </p>
           ) : (
-            <ul className="flex flex-col gap-2">
-              {myAppointments.map((a) => (
-                <li
-                  key={a.id}
-                  className="flex items-center justify-between rounded-lg border border-border/60 bg-background/40 p-3 text-sm transition-colors hover:bg-accent/5"
-                >
+            data.upcoming.map((a) => (
+              <div
+                key={a.id}
+                className="flex items-center justify-between rounded-lg border border-border/60 bg-background/40 p-3 text-sm transition-colors hover:bg-accent/5"
+              >
+                <div className="flex flex-col">
                   <span>{format(new Date(a.start_time), "PPp")}</span>
-                  <span className="capitalize text-muted-foreground">{a.status}</span>
-                </li>
-              ))}
-            </ul>
+                  <span className="text-xs text-muted-foreground">
+                    {(a.staff as unknown as { profile: { full_name: string } } | null)?.profile?.full_name ??
+                      "No preference"}
+                  </span>
+                </div>
+                <Badge variant={STATUS_VARIANT[a.status as AppointmentStatus]} className="capitalize">
+                  {a.status.replace("_", " ")}
+                </Badge>
+              </div>
+            ))
           )}
         </CardContent>
       </Card>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <History className="size-4 text-accent" />
+              <CardTitle className="text-base">Appointment history</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {data.history.length === 0 && <p className="text-sm text-muted-foreground">No past visits yet.</p>}
+            {data.history.map((a) => (
+              <div key={a.id} className="flex items-center justify-between text-sm">
+                <div className="flex flex-col">
+                  <span>{format(new Date(a.start_time), "PP")}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {(a.items ?? [])
+                      .map((i) => (i.service as unknown as { name: string } | null)?.name)
+                      .filter(Boolean)
+                      .join(", ") || "—"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={STATUS_VARIANT[a.status as AppointmentStatus]} className="capitalize">
+                    {a.status.replace("_", " ")}
+                  </Badge>
+                  {a.status === "completed" && !data.reviewedAppointmentIds.has(a.id) && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setReviewTarget({ id: a.id, staffId: a.staff_id })}
+                    >
+                      <Star className="size-4" /> Review
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Invoices &amp; payments</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {data.invoices.length === 0 && <p className="text-sm text-muted-foreground">No invoices yet.</p>}
+            {data.invoices.map((inv) => (
+              <div key={inv.id} className="flex items-center justify-between text-sm">
+                <span className="font-medium">{inv.invoice_number}</span>
+                <div className="flex items-center gap-2">
+                  <span>${Number(inv.total).toFixed(2)}</span>
+                  <Badge variant={INVOICE_VARIANT[inv.status as InvoiceStatus]} className="capitalize">
+                    {inv.status}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-4 text-accent" />
+              <CardTitle className="text-base">For you</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {data.topServices.length > 0 && (
+              <div>
+                <p className="mb-1 text-xs font-medium text-muted-foreground uppercase">Your favorites</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {data.topServices.map((s) => (
+                    <Badge key={s} variant="secondary">
+                      {s}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div>
+              <p className="mb-1 flex items-center gap-1 text-xs font-medium text-muted-foreground uppercase">
+                <Tag className="size-3" /> Current offers
+              </p>
+              {data.activeOffers.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No active promotions right now.</p>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  {data.activeOffers.map((o) => (
+                    <div key={o.id} className="flex items-center justify-between text-sm">
+                      <span>{o.name}</span>
+                      <span className="font-medium text-accent">
+                        {o.discount_type === "percent" ? `${o.discount_value}% off` : `$${o.discount_value} off`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Award className="size-4 text-accent" />
+              <CardTitle className="text-base">Loyalty activity</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {data.loyaltyTx.length === 0 && (
+              <p className="text-sm text-muted-foreground">Earn points every time you pay for a visit.</p>
+            )}
+            {data.loyaltyTx.map((t) => (
+              <div key={t.id} className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">{t.reason ?? t.type}</span>
+                <span className={t.points >= 0 ? "text-accent" : "text-destructive"}>
+                  {t.points >= 0 ? "+" : ""}
+                  {t.points}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Crown className="size-4 text-accent" />
+            <CardTitle className="text-base">Membership plans</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-3">
+          {data.plans.map((p) => {
+            const isCurrent = data.membership?.plan_id === p.id
+            return (
+              <div
+                key={p.id}
+                className={`flex flex-col gap-2 rounded-xl border p-4 ${
+                  isCurrent ? "border-accent bg-accent/5" : "border-border/60 bg-background/40"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-display text-lg font-semibold">{p.name}</span>
+                  {isCurrent && <Badge variant="success">Active</Badge>}
+                </div>
+                <span className="text-2xl font-semibold">
+                  ${Number(p.price).toFixed(0)}
+                  <span className="text-sm font-normal text-muted-foreground">/{p.duration_months}mo</span>
+                </span>
+                <p className="text-sm text-muted-foreground">{p.benefits}</p>
+                {!isCurrent && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-auto"
+                    onClick={() => joinMembership.mutate(p)}
+                    disabled={joinMembership.isPending || !!data.membership}
+                  >
+                    Join
+                  </Button>
+                )}
+              </div>
+            )
+          })}
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!reviewTarget} onOpenChange={(open) => !open && setReviewTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rate your visit</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button key={n} type="button" onClick={() => setRating(n)}>
+                  <Star className={`size-6 ${n <= rating ? "fill-accent text-accent" : "text-muted-foreground"}`} />
+                </button>
+              ))}
+            </div>
+            <Textarea
+              placeholder="Tell us about your experience (optional)"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+            <DialogFooter>
+              <Button onClick={() => submitReview.mutate()} disabled={submitReview.isPending}>
+                Submit review
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

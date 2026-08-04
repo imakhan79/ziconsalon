@@ -170,6 +170,17 @@ export default function BillingPage() {
         .update({ status: newStatus })
         .eq("id", viewInvoice.id)
       if (invErr) throw invErr
+
+      const earnedPoints = Math.floor(amount)
+      if (earnedPoints > 0) {
+        await supabase.from("loyalty_transactions").insert({
+          customer_id: viewInvoice.customer_id,
+          points: earnedPoints,
+          type: "earn",
+          reason: `Payment on ${viewInvoice.invoice_number}`,
+          invoice_id: viewInvoice.id,
+        })
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] })
