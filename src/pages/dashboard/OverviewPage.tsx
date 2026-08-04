@@ -88,7 +88,12 @@ export default function OverviewPage() {
       ?.myAppointments ?? []
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-2xl font-semibold">Welcome, {profile?.full_name}</h1>
+        <div>
+          <h1 className="font-display text-2xl font-semibold">
+            Welcome, <span className="text-gradient-luxury">{profile?.full_name}</span>
+          </h1>
+          <p className="text-sm text-muted-foreground">Here's what's coming up for you.</p>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>Your upcoming appointments</CardTitle>
@@ -101,7 +106,10 @@ export default function OverviewPage() {
             ) : (
               <ul className="flex flex-col gap-2">
                 {myAppointments.map((a) => (
-                  <li key={a.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
+                  <li
+                    key={a.id}
+                    className="flex items-center justify-between rounded-lg border border-border/60 bg-background/40 p-3 text-sm transition-colors hover:bg-accent/5"
+                  >
                     <span>{format(new Date(a.start_time), "PPp")}</span>
                     <span className="capitalize text-muted-foreground">{a.status}</span>
                   </li>
@@ -124,10 +132,13 @@ export default function OverviewPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Business overview</h1>
+      <div>
+        <h1 className="font-display text-2xl font-semibold">Business overview</h1>
+        <p className="text-sm text-muted-foreground">Your salon's performance at a glance.</p>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={CalendarDays} label="Appointments this month" value={stats.apptCount} />
-        <StatCard icon={DollarSign} label="Revenue this month" value={`$${stats.revenue.toFixed(2)}`} />
+        <StatCard icon={DollarSign} label="Revenue this month" value={`$${stats.revenue.toFixed(2)}`} accent="gold" />
         <StatCard icon={Users} label="Total customers" value={stats.customerCount} />
         <StatCard icon={AlertTriangle} label="Low stock items" value={stats.lowStock.length} />
       </div>
@@ -139,11 +150,23 @@ export default function OverviewPage() {
         <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stats.chartData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="day" fontSize={12} />
-              <YAxis fontSize={12} />
-              <Tooltip />
-              <Bar dataKey="total" fill="var(--color-primary, #aa3bff)" radius={4} />
+              <defs>
+                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="var(--color-gold)" stopOpacity={0.85} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+              <XAxis dataKey="day" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--popover)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "0.75rem",
+                }}
+              />
+              <Bar dataKey="total" fill="url(#revenueGradient)" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -157,9 +180,12 @@ export default function OverviewPage() {
           <CardContent>
             <ul className="flex flex-col gap-2 text-sm">
               {stats.lowStock.map((p) => (
-                <li key={p.id} className="flex justify-between">
+                <li
+                  key={p.id}
+                  className="flex justify-between rounded-lg border border-border/60 bg-background/40 px-3 py-2"
+                >
                   <span>{p.name}</span>
-                  <span className="text-destructive">{p.stock_qty} left</span>
+                  <span className="text-destructive font-medium">{p.stock_qty} left</span>
                 </li>
               ))}
             </ul>
@@ -174,20 +200,22 @@ function StatCard({
   icon: Icon,
   label,
   value,
+  accent = "primary",
 }: {
   icon: React.ComponentType<{ className?: string }>
   label: string
   value: string | number
+  accent?: "primary" | "gold"
 }) {
   return (
     <Card>
       <CardContent className="flex items-center gap-4">
-        <div className="rounded-full bg-primary/10 p-3">
-          <Icon className="size-5 text-primary" />
+        <div className={accent === "gold" ? "gradient-gold rounded-xl p-3" : "gradient-luxury rounded-xl p-3"}>
+          <Icon className={accent === "gold" ? "size-5 text-accent-foreground" : "size-5 text-primary-foreground"} />
         </div>
         <div>
           <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="text-xl font-semibold">{value}</p>
+          <p className="font-display text-xl font-semibold">{value}</p>
         </div>
       </CardContent>
     </Card>

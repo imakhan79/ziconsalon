@@ -11,6 +11,8 @@ export type InvoiceStatus = "unpaid" | "partial" | "paid" | "refunded" | "void"
 
 export type PaymentMethod = "cash" | "card" | "bank_transfer" | "wallet" | "other"
 
+export type InventoryTxnType = "purchase" | "sale" | "adjustment" | "return"
+
 export interface Profile {
   id: string
   full_name: string
