@@ -53,6 +53,8 @@ import {
   MapPin,
   HeartHandshake,
   Mail,
+  ClipboardCheck,
+  Copy,
 } from "lucide-react"
 import {
   Dialog,
@@ -62,6 +64,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import type {
   AppointmentStatus,
   InvoiceStatus,
@@ -71,6 +75,8 @@ import type {
   Branch,
   RewardCatalogItem,
   Invoice,
+  Referral,
+  Survey,
 } from "@/types"
 
 const STATUS_VARIANT: Record<AppointmentStatus, "default" | "success" | "warning" | "destructive" | "outline"> = {
@@ -284,6 +290,97 @@ function CustomerOverview() {
     onError: (e: Error) => toast.error(e.message),
   })
 
+  const { data: myReferral } = useQuery({
+    queryKey: ["my-referral", profile?.id],
+    enabled: !!profile,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("referrals")
+        .select("*")
+        .eq("referrer_id", profile!.id)
+        .maybeSingle()
+      if (error) throw error
+      return data as Referral | null
+    },
+  })
+
+  const { data: wasReferred } = useQuery({
+    queryKey: ["was-referred", profile?.id],
+    enabled: !!profile,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("referrals")
+        .select("id")
+        .eq("referred_customer_id", profile!.id)
+        .maybeSingle()
+      if (error) throw error
+      return !!data
+    },
+  })
+
+  const createMyReferral = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("referrals").insert({ referrer_id: profile!.id })
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-referral"] }),
+  })
+
+  React.useEffect(() => {
+    if (profile && myReferral === null && !createMyReferral.isPending) {
+      createMyReferral.mutate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, myReferral])
+
+  const [referralCodeInput, setReferralCodeInput] = React.useState("")
+  const redeemReferral = useMutation({
+    mutationFn: async () => {
+      if (!referralCodeInput.trim()) throw new Error("Enter a referral code")
+      const { error } = await supabase.rpc("redeem_referral_code", { p_code: referralCodeInput.trim().toUpperCase() })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["was-referred"] })
+      queryClient.invalidateQueries({ queryKey: ["overview-customer"] })
+      setReferralCodeInput("")
+      toast.success("Referral applied! Bonus points added.")
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const { data: activeSurveys = [] } = useQuery({
+    queryKey: ["active-surveys", profile?.id],
+    enabled: !!profile,
+    queryFn: async () => {
+      const [{ data: surveys }, { data: myResponses }] = await Promise.all([
+        supabase.from("surveys").select("*").eq("is_active", true),
+        supabase.from("survey_responses").select("survey_id").eq("customer_id", profile!.id),
+      ])
+      const answeredIds = new Set((myResponses ?? []).map((r) => r.survey_id))
+      return ((surveys ?? []) as Survey[]).filter((s) => !answeredIds.has(s.id))
+    },
+  })
+
+  const [surveyAnswers, setSurveyAnswers] = React.useState<Record<string, Record<string, string | number>>>({})
+  const submitSurvey = useMutation({
+    mutationFn: async (survey: Survey) => {
+      const answers = surveyAnswers[survey.id] ?? {}
+      const { error } = await supabase.from("survey_responses").insert({
+        survey_id: survey.id,
+        customer_id: profile!.id,
+        answers,
+      })
+      if (error) throw error
+    },
+    onSuccess: (_data, survey) => {
+      queryClient.invalidateQueries({ queryKey: ["active-surveys"] })
+      setSurveyAnswers((a) => ({ ...a, [survey.id]: {} }))
+      toast.success("Thanks for your feedback!")
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
   const exportData = () => {
     if (!data) return
     const blob = new Blob([JSON.stringify({ profile, ...data }, null, 2)], { type: "application/json" })
@@ -406,6 +503,118 @@ function CustomerOverview() {
           </Button>
         </div>
       )}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Gift className="size-4 text-accent" />
+              <CardTitle className="text-base">Refer a friend</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {myReferral && (
+              <div className="flex items-center gap-2">
+                <Input readOnly value={myReferral.referral_code} className="font-mono" />
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(myReferral.referral_code)
+                    toast.success("Code copied")
+                  }}
+                >
+                  <Copy className="size-4" />
+                </Button>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Share your code — you both get {myReferral?.reward_points ?? 100} bonus points when a friend redeems it.
+            </p>
+            {!wasReferred && (
+              <form
+                className="flex items-center gap-2 border-t border-border/60 pt-3"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  redeemReferral.mutate()
+                }}
+              >
+                <Input
+                  placeholder="Have a code? Enter it here"
+                  value={referralCodeInput}
+                  onChange={(e) => setReferralCodeInput(e.target.value)}
+                  className="flex-1"
+                />
+                <Button type="submit" size="sm" disabled={redeemReferral.isPending}>
+                  Redeem
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        {activeSurveys.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <ClipboardCheck className="size-4 text-accent" />
+                <CardTitle className="text-base">Quick feedback</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              {activeSurveys.map((s) => (
+                <form
+                  key={s.id}
+                  className="flex flex-col gap-2 border-b border-border/60 pb-4 last:border-0 last:pb-0"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    submitSurvey.mutate(s)
+                  }}
+                >
+                  <p className="text-sm font-medium">{s.title}</p>
+                  {s.questions.map((q) => (
+                    <div key={q.id} className="flex flex-col gap-1">
+                      <Label className="text-xs">{q.text}</Label>
+                      {q.type === "rating" ? (
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() =>
+                                setSurveyAnswers((a) => ({ ...a, [s.id]: { ...(a[s.id] ?? {}), [q.id]: n } }))
+                              }
+                            >
+                              <Star
+                                className={`size-5 ${
+                                  Number(surveyAnswers[s.id]?.[q.id] ?? 0) >= n
+                                    ? "fill-accent text-accent"
+                                    : "text-muted-foreground/30"
+                                }`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <Input
+                          value={(surveyAnswers[s.id]?.[q.id] as string) ?? ""}
+                          onChange={(e) =>
+                            setSurveyAnswers((a) => ({ ...a, [s.id]: { ...(a[s.id] ?? {}), [q.id]: e.target.value } }))
+                          }
+                        />
+                      )}
+                    </div>
+                  ))}
+                  <Button type="submit" size="sm" className="w-fit" disabled={submitSurvey.isPending}>
+                    Submit
+                  </Button>
+                </form>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={CalendarDays} label="Upcoming appointments" value={data.upcoming.length} />

@@ -31,6 +31,10 @@ import {
   Truck,
   ClipboardList,
   ArrowRightLeft,
+  Send,
+  Gift,
+  ListChecks,
+  Star,
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useTheme } from "@/contexts/ThemeContext"
@@ -66,6 +70,10 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard/finance", label: "Finance", icon: Wallet, roles: ["admin", "manager"] },
   { to: "/dashboard/refunds", label: "Refunds", icon: Undo2, roles: ["admin", "manager"] },
   { to: "/dashboard/marketing", label: "Marketing", icon: Megaphone, roles: ["admin", "manager"] },
+  { to: "/dashboard/marketing/campaigns", label: "Campaigns", icon: Send, roles: ["admin", "manager"] },
+  { to: "/dashboard/marketing/referrals", label: "Referrals", icon: Gift, roles: ["admin", "manager"] },
+  { to: "/dashboard/marketing/surveys", label: "Surveys", icon: ListChecks, roles: ["admin", "manager"] },
+  { to: "/dashboard/marketing/reviews", label: "Reviews", icon: Star, roles: ["admin", "manager"] },
   { to: "/dashboard/reports", label: "Reports", icon: BarChart3, roles: ["admin", "manager"] },
   { to: "/dashboard/profile", label: "Profile", icon: UserCircle, roles: ["admin", "manager", "staff", "customer"] },
   { to: "/dashboard/settings", label: "Settings", icon: Settings, roles: ["admin", "manager", "staff", "customer"] },

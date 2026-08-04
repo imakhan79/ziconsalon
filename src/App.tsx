@@ -30,6 +30,10 @@ import CashClosingPage from "@/pages/dashboard/CashClosingPage"
 import VendorsPage from "@/pages/dashboard/VendorsPage"
 import PurchaseOrdersPage from "@/pages/dashboard/PurchaseOrdersPage"
 import StockTransfersPage from "@/pages/dashboard/StockTransfersPage"
+import CampaignsPage from "@/pages/dashboard/CampaignsPage"
+import ReferralsPage from "@/pages/dashboard/ReferralsPage"
+import SurveysPage from "@/pages/dashboard/SurveysPage"
+import ReviewsPage from "@/pages/dashboard/ReviewsPage"
 import AdminOverviewPage from "@/pages/admin/OverviewPage"
 import BranchesPage from "@/pages/admin/BranchesPage"
 import UsersPage from "@/pages/admin/UsersPage"
@@ -78,6 +82,10 @@ function App() {
                     <Route path="/dashboard/finance" element={<FinancePage />} />
                     <Route path="/dashboard/refunds" element={<RefundsPage />} />
                     <Route path="/dashboard/marketing" element={<MarketingPage />} />
+                    <Route path="/dashboard/marketing/campaigns" element={<CampaignsPage />} />
+                    <Route path="/dashboard/marketing/referrals" element={<ReferralsPage />} />
+                    <Route path="/dashboard/marketing/surveys" element={<SurveysPage />} />
+                    <Route path="/dashboard/marketing/reviews" element={<ReviewsPage />} />
                     <Route path="/dashboard/reports" element={<ReportsPage />} />
                   </Route>
 

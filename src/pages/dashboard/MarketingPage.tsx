@@ -49,6 +49,7 @@ const emptyForm = {
   discount_value: "0",
   starts_at: "",
   ends_at: "",
+  usage_limit: "",
   is_active: true,
 }
 
@@ -80,6 +81,7 @@ export default function MarketingPage() {
         discount_value: Number(values.discount_value),
         starts_at: values.starts_at ? new Date(values.starts_at).toISOString() : null,
         ends_at: values.ends_at ? new Date(values.ends_at).toISOString() : null,
+        usage_limit: values.usage_limit ? Number(values.usage_limit) : null,
         is_active: values.is_active,
       }
       if (values.id) {
@@ -126,6 +128,7 @@ export default function MarketingPage() {
       discount_value: String(p.discount_value),
       starts_at: p.starts_at ? p.starts_at.slice(0, 10) : "",
       ends_at: p.ends_at ? p.ends_at.slice(0, 10) : "",
+      usage_limit: p.usage_limit != null ? String(p.usage_limit) : "",
       is_active: p.is_active,
     })
     setDialogOpen(true)
@@ -242,6 +245,17 @@ export default function MarketingPage() {
                   />
                 </div>
               </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="promo-usage-limit">Usage limit (optional)</Label>
+                <Input
+                  id="promo-usage-limit"
+                  type="number"
+                  min={1}
+                  value={form.usage_limit}
+                  onChange={(e) => setForm((f) => ({ ...f, usage_limit: e.target.value }))}
+                  placeholder="Unlimited"
+                />
+              </div>
               <div className="flex items-center gap-2">
                 <Switch
                   id="promo-active"
@@ -269,6 +283,7 @@ export default function MarketingPage() {
                 <TableHead>Code</TableHead>
                 <TableHead>Discount</TableHead>
                 <TableHead>Window</TableHead>
+                <TableHead>Usage</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-24">Actions</TableHead>
               </TableRow>
@@ -276,14 +291,14 @@ export default function MarketingPage() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     Loading...
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && promotions.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     <div className="flex flex-col items-center gap-2 py-6">
                       <Megaphone className="size-8 text-muted-foreground/50" />
                       No promotions yet.
@@ -303,6 +318,9 @@ export default function MarketingPage() {
                   <TableCell className="text-xs text-muted-foreground">
                     {p.starts_at ? format(new Date(p.starts_at), "PP") : "—"} →{" "}
                     {p.ends_at ? format(new Date(p.ends_at), "PP") : "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {p.usage_limit != null ? `${p.usage_count} / ${p.usage_limit}` : `${p.usage_count} / ∞`}
                   </TableCell>
                   <TableCell>
                     <Badge variant={p.is_active ? "success" : "outline"}>

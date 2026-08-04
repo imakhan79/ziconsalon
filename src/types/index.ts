@@ -400,7 +400,9 @@ export interface CashSession {
 export interface CommunicationLog {
   id: string
   invoice_id: string | null
-  channel: "email" | "whatsapp"
+  campaign_id: string | null
+  customer_id: string | null
+  channel: "email" | "whatsapp" | "sms"
   recipient: string
   status: "pending" | "sent" | "failed"
   created_by: string | null
@@ -537,7 +539,12 @@ export interface Review {
   staff_id: string | null
   rating: number
   comment: string | null
+  reply: string | null
+  replied_by: string | null
+  replied_at: string | null
   created_at: string
+  customer?: Profile
+  staff?: Profile
 }
 
 export interface Promotion {
@@ -550,4 +557,92 @@ export interface Promotion {
   starts_at: string | null
   ends_at: string | null
   is_active: boolean
+  usage_limit: number | null
+  usage_count: number
+}
+
+export type SegmentType =
+  | "all"
+  | "birthday_month"
+  | "anniversary_month"
+  | "inactive"
+  | "top_spenders"
+  | "active_members"
+  | "new_customers"
+
+export interface CustomerSegment {
+  id: string
+  branch_id: string | null
+  name: string
+  type: SegmentType
+  params: Record<string, unknown>
+  created_by: string | null
+  created_at: string
+}
+
+export type CampaignChannel = "email" | "sms" | "whatsapp"
+export type CampaignStatus = "draft" | "sent" | "cancelled"
+
+export interface Campaign {
+  id: string
+  branch_id: string | null
+  name: string
+  channel: CampaignChannel
+  subject: string | null
+  message: string
+  segment_id: string | null
+  status: CampaignStatus
+  sent_at: string | null
+  created_by: string | null
+  created_at: string
+  segment?: CustomerSegment
+  recipient_count?: number
+}
+
+export interface CampaignRecipient {
+  id: string
+  campaign_id: string
+  customer_id: string
+  status: "pending" | "sent" | "failed"
+  created_at: string
+}
+
+export type ReferralStatus = "active" | "completed"
+
+export interface Referral {
+  id: string
+  referrer_id: string
+  referral_code: string
+  referred_customer_id: string | null
+  reward_points: number
+  status: ReferralStatus
+  created_at: string
+  completed_at: string | null
+  referrer?: Profile
+  referred_customer?: Profile
+}
+
+export interface SurveyQuestion {
+  id: string
+  text: string
+  type: "rating" | "text"
+}
+
+export interface Survey {
+  id: string
+  branch_id: string | null
+  title: string
+  questions: SurveyQuestion[]
+  is_active: boolean
+  created_by: string | null
+  created_at: string
+  response_count?: number
+}
+
+export interface SurveyResponse {
+  id: string
+  survey_id: string
+  customer_id: string | null
+  answers: Record<string, string | number>
+  created_at: string
 }

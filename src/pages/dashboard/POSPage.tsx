@@ -276,17 +276,10 @@ export default function POSPage() {
   const applyCoupon = useMutation({
     mutationFn: async () => {
       if (!couponCode.trim()) throw new Error("Enter a coupon code")
-      const { data, error } = await supabase
-        .from("promotions")
-        .select("*")
-        .eq("code", couponCode.trim())
-        .eq("is_active", true)
-        .maybeSingle()
+      const { data, error } = await supabase.rpc("redeem_promotion_code", {
+        p_code: couponCode.trim(),
+      })
       if (error) throw error
-      if (!data) throw new Error("Coupon not found or inactive")
-      const now = new Date()
-      if (data.starts_at && new Date(data.starts_at) > now) throw new Error("Coupon isn't active yet")
-      if (data.ends_at && new Date(data.ends_at) < now) throw new Error("Coupon has expired")
       return data as Promotion
     },
     onSuccess: (promo) => {
