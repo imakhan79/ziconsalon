@@ -1,6 +1,7 @@
 import type { ComponentType } from "react"
 import { Link } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 import { format, startOfDay, addDays, subDays } from "date-fns"
 import {
   BarChart,
@@ -32,6 +33,10 @@ import {
   BarChart3,
   Building2,
   ArrowRight,
+  ClipboardList,
+  UserPlus,
+  LogIn,
+  CalendarClock,
 } from "lucide-react"
 import type { AppointmentStatus } from "@/types"
 
@@ -47,7 +52,8 @@ export default function OverviewPage() {
   const { profile } = useAuth()
 
   if (profile?.role === "manager") return <BranchAdminDashboard />
-  if (profile && ["admin", "staff"].includes(profile.role)) return <StaffOverview />
+  if (profile?.role === "staff") return <ReceptionistDashboard />
+  if (profile?.role === "admin") return <StaffOverview />
   return <CustomerOverview />
 }
 
@@ -213,6 +219,210 @@ function StaffOverview() {
           </CardContent>
         </Card>
       )}
+    </div>
+  )
+}
+
+function ReceptionistDashboard() {
+  const { profile } = useAuth()
+  const queryClient = useQueryClient()
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["overview-receptionist", profile?.id],
+    enabled: !!profile,
+    queryFn: async () => {
+      const todayStart = startOfDay(new Date())
+      const todayStartIso = todayStart.toISOString()
+      const tomorrowIso = addDays(todayStart, 1).toISOString()
+
+      const [{ data: todaysAppts }, { data: duePayments }, { count: newCustomersToday }] = await Promise.all([
+        supabase
+          .from("appointments")
+          .select(
+            "id, start_time, status, customer:profiles!appointments_customer_id_fkey(full_name, phone), staff:staff(*, profile:profiles(full_name))"
+          )
+          .gte("start_time", todayStartIso)
+          .lt("start_time", tomorrowIso)
+          .order("start_time", { ascending: true }),
+        supabase
+          .from("invoices")
+          .select("id, invoice_number, total, status, customer:profiles!invoices_customer_id_fkey(full_name)")
+          .in("status", ["unpaid", "partial"])
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("profiles")
+          .select("id", { count: "exact", head: true })
+          .eq("role", "customer")
+          .gte("created_at", todayStartIso),
+      ])
+
+      const appts = todaysAppts ?? []
+      return {
+        appts,
+        pendingCheckIn: appts.filter((a) => a.status === "pending").length,
+        checkedIn: appts.filter((a) => a.status === "confirmed").length,
+        completedToday: appts.filter((a) => a.status === "completed").length,
+        duePayments: duePayments ?? [],
+        duePaymentsTotal: (duePayments ?? []).reduce((s, i) => s + Number(i.total), 0),
+        newCustomersToday: newCustomersToday ?? 0,
+      }
+    },
+  })
+
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: AppointmentStatus }) => {
+      const { error } = await supabase.from("appointments").update({ status }).eq("id", id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["overview-receptionist"] })
+      toast.success("Status updated")
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  if (isLoading || !data) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-28" />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="glass-card flex flex-wrap items-center justify-between gap-3 rounded-xl p-5">
+        <div className="flex items-center gap-3">
+          <div className="gradient-luxury rounded-xl p-3">
+            <ClipboardList className="size-5 text-primary-foreground" />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-semibold">Front Desk</h1>
+            <p className="text-sm text-muted-foreground">
+              Welcome back, {profile?.full_name} — {format(new Date(), "EEEE, MMMM d")}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild size="sm">
+            <Link to="/dashboard/appointments">
+              <Plus className="size-4" /> Book / walk-in
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/dashboard/billing">
+              <Receipt className="size-4" /> POS billing
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/signup" target="_blank" rel="noopener noreferrer">
+              <UserPlus className="size-4" /> Register customer
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/dashboard/customers">
+              <Users className="size-4" /> Customers
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard icon={CalendarDays} label="Today's appointments" value={data.appts.length} />
+        <StatCard icon={CalendarClock} label="Awaiting check-in" value={data.pendingCheckIn} />
+        <StatCard icon={LogIn} label="Checked in" value={data.checkedIn} accent="gold" />
+        <StatCard icon={CheckCircle2} label="Completed today" value={data.completedToday} />
+        <StatCard icon={Receipt} label="Payments due" value={`$${data.duePaymentsTotal.toFixed(2)}`} />
+        <StatCard icon={UserPlus} label="New customers today" value={data.newCustomersToday} />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Front desk queue — today</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {data.appts.length === 0 && (
+              <p className="text-sm text-muted-foreground">No appointments scheduled today.</p>
+            )}
+            {data.appts.map((a) => (
+              <div
+                key={a.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/40 px-3 py-2 text-sm"
+              >
+                <div className="flex flex-col">
+                  <span className="font-medium">{format(new Date(a.start_time), "p")}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {(a.customer as unknown as { full_name: string } | null)?.full_name ?? "—"} ·{" "}
+                    {(a.staff as unknown as { profile: { full_name: string } } | null)?.profile?.full_name ??
+                      "Unassigned"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={STATUS_VARIANT[a.status as AppointmentStatus]} className="capitalize">
+                    {a.status.replace("_", " ")}
+                  </Badge>
+                  {a.status === "pending" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateStatus.mutate({ id: a.id, status: "confirmed" })}
+                    >
+                      Check in
+                    </Button>
+                  )}
+                  {a.status === "confirmed" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateStatus.mutate({ id: a.id, status: "completed" })}
+                    >
+                      Check out
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Payments due</CardTitle>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/dashboard/billing">
+                  Open billing <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {data.duePayments.length === 0 && (
+              <p className="text-sm text-muted-foreground">No outstanding payments.</p>
+            )}
+            {data.duePayments.map((inv) => (
+              <div key={inv.id} className="flex items-center justify-between text-sm">
+                <div className="flex flex-col">
+                  <span className="font-medium">{inv.invoice_number}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {(inv.customer as unknown as { full_name: string } | null)?.full_name ?? "—"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>${Number(inv.total).toFixed(2)}</span>
+                  <Badge variant="warning" className="capitalize">
+                    {inv.status}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
