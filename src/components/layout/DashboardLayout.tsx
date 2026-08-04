@@ -27,6 +27,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useTheme } from "@/contexts/ThemeContext"
+import { NotificationBell } from "@/components/layout/NotificationBell"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -187,6 +188,7 @@ export default function DashboardLayout() {
             <span className="rounded-full border border-border/60 bg-background/40 px-3 py-1 text-xs font-medium text-muted-foreground capitalize">
               {role}
             </span>
+            <NotificationBell />
             <Avatar className="size-9 ring-2 ring-accent/40">
               <AvatarFallback className="gradient-luxury text-primary-foreground">{initials}</AvatarFallback>
             </Avatar>
