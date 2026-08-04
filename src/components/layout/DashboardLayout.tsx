@@ -28,6 +28,9 @@ import {
   ShoppingCart,
   Undo2,
   Lock,
+  Truck,
+  ClipboardList,
+  ArrowRightLeft,
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useTheme } from "@/contexts/ThemeContext"
@@ -57,6 +60,9 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard/pos", label: "POS", icon: ShoppingCart, roles: ["admin", "manager", "staff"] },
   { to: "/dashboard/cash-closing", label: "Cash Closing", icon: Lock, roles: ["admin", "manager", "staff"] },
   { to: "/dashboard/inventory", label: "Inventory", icon: Boxes, roles: ["admin", "manager"] },
+  { to: "/dashboard/inventory/vendors", label: "Vendors", icon: Truck, roles: ["admin", "manager"] },
+  { to: "/dashboard/inventory/purchase-orders", label: "Purchase Orders", icon: ClipboardList, roles: ["admin", "manager"] },
+  { to: "/dashboard/inventory/transfers", label: "Transfers", icon: ArrowRightLeft, roles: ["admin", "manager"] },
   { to: "/dashboard/finance", label: "Finance", icon: Wallet, roles: ["admin", "manager"] },
   { to: "/dashboard/refunds", label: "Refunds", icon: Undo2, roles: ["admin", "manager"] },
   { to: "/dashboard/marketing", label: "Marketing", icon: Megaphone, roles: ["admin", "manager"] },

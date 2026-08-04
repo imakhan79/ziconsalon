@@ -27,6 +27,9 @@ import StaffHRPage from "@/pages/dashboard/StaffHRPage"
 import POSPage from "@/pages/dashboard/POSPage"
 import RefundsPage from "@/pages/dashboard/RefundsPage"
 import CashClosingPage from "@/pages/dashboard/CashClosingPage"
+import VendorsPage from "@/pages/dashboard/VendorsPage"
+import PurchaseOrdersPage from "@/pages/dashboard/PurchaseOrdersPage"
+import StockTransfersPage from "@/pages/dashboard/StockTransfersPage"
 import AdminOverviewPage from "@/pages/admin/OverviewPage"
 import BranchesPage from "@/pages/admin/BranchesPage"
 import UsersPage from "@/pages/admin/UsersPage"
@@ -69,6 +72,9 @@ function App() {
                     <Route path="/dashboard/staff-hr" element={<StaffHRPage />} />
                     <Route path="/dashboard/services" element={<ServicesPage />} />
                     <Route path="/dashboard/inventory" element={<InventoryPage />} />
+                    <Route path="/dashboard/inventory/vendors" element={<VendorsPage />} />
+                    <Route path="/dashboard/inventory/purchase-orders" element={<PurchaseOrdersPage />} />
+                    <Route path="/dashboard/inventory/transfers" element={<StockTransfersPage />} />
                     <Route path="/dashboard/finance" element={<FinancePage />} />
                     <Route path="/dashboard/refunds" element={<RefundsPage />} />
                     <Route path="/dashboard/marketing" element={<MarketingPage />} />

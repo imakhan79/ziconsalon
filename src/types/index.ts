@@ -21,7 +21,14 @@ export type PaymentMethod =
   | "gift_card"
   | "store_credit"
 
-export type InventoryTxnType = "purchase" | "sale" | "adjustment" | "return"
+export type InventoryTxnType =
+  | "purchase"
+  | "sale"
+  | "adjustment"
+  | "return"
+  | "transfer_in"
+  | "transfer_out"
+  | "write_off"
 
 export interface Branch {
   id: string
@@ -190,6 +197,86 @@ export interface Product {
   stock_qty: number
   reorder_level: number
   is_active: boolean
+  barcode: string | null
+  default_vendor_id: string | null
+}
+
+export interface Vendor {
+  id: string
+  branch_id: string | null
+  name: string
+  contact_name: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export interface ProductBatch {
+  id: string
+  product_id: string
+  batch_number: string | null
+  qty: number
+  expiry_date: string | null
+  received_at: string
+  purchase_order_id: string | null
+  created_at: string
+  product?: Product
+}
+
+export type PurchaseOrderStatus = "draft" | "ordered" | "partially_received" | "received" | "cancelled"
+
+export interface PurchaseOrder {
+  id: string
+  po_number: string
+  vendor_id: string | null
+  branch_id: string | null
+  status: PurchaseOrderStatus
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  ordered_at: string | null
+  received_at: string | null
+  vendor?: Vendor
+  items?: PurchaseOrderItem[]
+}
+
+export interface PurchaseOrderItem {
+  id: string
+  purchase_order_id: string
+  product_id: string
+  qty_ordered: number
+  qty_received: number
+  unit_cost: number
+  product?: Product
+}
+
+export type StockTransferStatus = "pending" | "in_transit" | "completed" | "cancelled"
+
+export interface StockTransfer {
+  id: string
+  transfer_number: string
+  from_branch_id: string
+  to_branch_id: string
+  status: StockTransferStatus
+  notes: string | null
+  created_by: string | null
+  created_at: string
+  completed_at: string | null
+  from_branch?: Branch
+  to_branch?: Branch
+  items?: StockTransferItem[]
+}
+
+export interface StockTransferItem {
+  id: string
+  transfer_id: string
+  from_product_id: string
+  to_product_id: string
+  qty: number
+  from_product?: Product
+  to_product?: Product
 }
 
 export interface Invoice {

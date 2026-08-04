@@ -333,19 +333,12 @@ export default function POSPage() {
       if (itemsErr) throw itemsErr
 
       for (const l of cart.filter((l) => l.kind === "product")) {
-        const product = products.find((p) => p.id === l.refId)
-        if (!product) continue
-        const { error: txnErr } = await supabase.from("inventory_transactions").insert({
-          product_id: l.refId,
-          type: "sale",
-          qty: -l.qty,
-          note: `POS sale ${invoice.invoice_number}`,
+        const { error: stockErr } = await supabase.rpc("adjust_stock", {
+          p_product_id: l.refId,
+          p_qty_delta: -l.qty,
+          p_type: "sale",
+          p_note: `POS sale ${invoice.invoice_number}`,
         })
-        if (txnErr) throw txnErr
-        const { error: stockErr } = await supabase
-          .from("products")
-          .update({ stock_qty: Number(product.stock_qty) - l.qty })
-          .eq("id", l.refId)
         if (stockErr) throw stockErr
       }
 
