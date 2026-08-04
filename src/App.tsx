@@ -22,6 +22,13 @@ import MarketingPage from "@/pages/dashboard/MarketingPage"
 import ReportsPage from "@/pages/dashboard/ReportsPage"
 import SettingsPage from "@/pages/dashboard/SettingsPage"
 import ProfilePage from "@/pages/dashboard/ProfilePage"
+import AdminOverviewPage from "@/pages/admin/OverviewPage"
+import BranchesPage from "@/pages/admin/BranchesPage"
+import UsersPage from "@/pages/admin/UsersPage"
+import AdminPricingPage from "@/pages/admin/PricingPage"
+import PermissionsPage from "@/pages/admin/PermissionsPage"
+import IntegrationsPage from "@/pages/admin/IntegrationsPage"
+import SystemPage from "@/pages/admin/SystemPage"
 
 const queryClient = new QueryClient()
 
@@ -56,6 +63,16 @@ function App() {
                     <Route path="/dashboard/finance" element={<FinancePage />} />
                     <Route path="/dashboard/marketing" element={<MarketingPage />} />
                     <Route path="/dashboard/reports" element={<ReportsPage />} />
+                  </Route>
+
+                  <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+                    <Route path="/dashboard/admin" element={<AdminOverviewPage />} />
+                    <Route path="/dashboard/admin/branches" element={<BranchesPage />} />
+                    <Route path="/dashboard/admin/users" element={<UsersPage />} />
+                    <Route path="/dashboard/admin/pricing" element={<AdminPricingPage />} />
+                    <Route path="/dashboard/admin/permissions" element={<PermissionsPage />} />
+                    <Route path="/dashboard/admin/integrations" element={<IntegrationsPage />} />
+                    <Route path="/dashboard/admin/system" element={<SystemPage />} />
                   </Route>
                 </Route>
               </Route>

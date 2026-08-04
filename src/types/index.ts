@@ -13,6 +13,41 @@ export type PaymentMethod = "cash" | "card" | "bank_transfer" | "wallet" | "othe
 
 export type InventoryTxnType = "purchase" | "sale" | "adjustment" | "return"
 
+export interface Branch {
+  id: string
+  name: string
+  code: string | null
+  address: string | null
+  phone: string | null
+  email: string | null
+  timezone: string
+  opening_hours: Record<string, unknown>
+  is_active: boolean
+  created_at: string
+}
+
+export interface Integration {
+  id: string
+  provider: string
+  display_name: string
+  category: string
+  is_enabled: boolean
+  config: Record<string, unknown>
+  connected_at: string | null
+  updated_at: string
+}
+
+export interface AuditLog {
+  id: string
+  actor_id: string | null
+  action: string
+  entity_type: string | null
+  entity_id: string | null
+  details: Record<string, unknown>
+  created_at: string
+  actor?: Profile
+}
+
 export interface Profile {
   id: string
   full_name: string
@@ -20,6 +55,7 @@ export interface Profile {
   avatar_url: string | null
   role: UserRole
   is_active: boolean
+  branch_id: string | null
   created_at: string
 }
 
