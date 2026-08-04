@@ -1,8 +1,9 @@
 import * as React from "react"
+import { useSearchParams } from "react-router-dom"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { format, addMinutes } from "date-fns"
-import { Plus } from "lucide-react"
+import { Plus, CalendarClock } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/AuthContext"
 import { useBranches } from "@/hooks/useBranches"
@@ -57,6 +58,10 @@ export default function AppointmentsPage() {
   const { branches } = useBranches()
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [form, setForm] = React.useState(emptyForm)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [rescheduleTarget, setRescheduleTarget] = React.useState<{ id: string; durationMs: number } | null>(null)
+  const [rescheduleDate, setRescheduleDate] = React.useState("")
+  const [rescheduleTime, setRescheduleTime] = React.useState("")
 
   const { data: appointments = [], isLoading } = useQuery({
     queryKey: ["appointments", me?.id],
@@ -104,6 +109,34 @@ export default function AppointmentsPage() {
     },
     enabled: dialogOpen,
   })
+
+  const rebookId = searchParams.get("rebook")
+  const { data: rebookSource } = useQuery({
+    queryKey: ["rebook-source", rebookId],
+    enabled: !!rebookId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("staff_id, branch_id, items:appointment_items(service_id)")
+        .eq("id", rebookId!)
+        .single()
+      if (error) throw error
+      return data
+    },
+  })
+
+  React.useEffect(() => {
+    if (!rebookSource) return
+    setForm((f) => ({
+      ...f,
+      staffId: rebookSource.staff_id ?? "",
+      branchId: rebookSource.branch_id ?? f.branchId,
+      serviceIds: (rebookSource.items ?? []).map((i) => i.service_id),
+    }))
+    setDialogOpen(true)
+    searchParams.delete("rebook")
+    setSearchParams(searchParams, { replace: true })
+  }, [rebookSource])
 
   const create = useMutation({
     mutationFn: async (values: typeof form) => {
@@ -158,6 +191,31 @@ export default function AppointmentsPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   })
+
+  const reschedule = useMutation({
+    mutationFn: async () => {
+      if (!rescheduleTarget || !rescheduleDate || !rescheduleTime) return
+      const newStart = new Date(`${rescheduleDate}T${rescheduleTime}`)
+      const newEnd = new Date(newStart.getTime() + rescheduleTarget.durationMs)
+      const { error } = await supabase
+        .from("appointments")
+        .update({ start_time: newStart.toISOString(), end_time: newEnd.toISOString() })
+        .eq("id", rescheduleTarget.id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] })
+      setRescheduleTarget(null)
+      toast.success("Appointment rescheduled")
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const openReschedule = (a: Appointment) => {
+    setRescheduleTarget({ id: a.id, durationMs: new Date(a.end_time).getTime() - new Date(a.start_time).getTime() })
+    setRescheduleDate(format(new Date(a.start_time), "yyyy-MM-dd"))
+    setRescheduleTime(format(new Date(a.start_time), "HH:mm"))
+  }
 
   const toggleService = (id: string) => {
     setForm((f) => ({
@@ -353,33 +411,40 @@ export default function AppointmentsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {isStaffOrAbove ? (
-                      <Select
-                        value={a.status}
-                        onValueChange={(v) => updateStatus.mutate({ id: a.id, status: v as AppointmentStatus })}
-                      >
-                        <SelectTrigger size="sm" className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="confirmed">Confirmed</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                          <SelectItem value="no_show">No show</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      ["pending", "confirmed"].includes(a.status) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateStatus.mutate({ id: a.id, status: "cancelled" })}
+                    <div className="flex items-center gap-1.5">
+                      {isStaffOrAbove ? (
+                        <Select
+                          value={a.status}
+                          onValueChange={(v) => updateStatus.mutate({ id: a.id, status: v as AppointmentStatus })}
                         >
-                          Cancel
+                          <SelectTrigger size="sm" className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="confirmed">Confirmed</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                            <SelectItem value="no_show">No show</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        ["pending", "confirmed"].includes(a.status) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateStatus.mutate({ id: a.id, status: "cancelled" })}
+                          >
+                            Cancel
+                          </Button>
+                        )
+                      )}
+                      {["pending", "confirmed"].includes(a.status) && (
+                        <Button variant="ghost" size="sm" onClick={() => openReschedule(a)} title="Reschedule">
+                          <CalendarClock className="size-4" />
                         </Button>
-                      )
-                    )}
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -387,6 +452,49 @@ export default function AppointmentsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={!!rescheduleTarget} onOpenChange={(open) => !open && setRescheduleTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reschedule appointment</DialogTitle>
+          </DialogHeader>
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault()
+              reschedule.mutate()
+            }}
+          >
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="resched-date">New date</Label>
+                <Input
+                  id="resched-date"
+                  type="date"
+                  required
+                  value={rescheduleDate}
+                  onChange={(e) => setRescheduleDate(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="resched-time">New time</Label>
+                <Input
+                  id="resched-time"
+                  type="time"
+                  required
+                  value={rescheduleTime}
+                  onChange={(e) => setRescheduleTime(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={reschedule.isPending}>
+                {reschedule.isPending ? "Saving..." : "Confirm new time"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

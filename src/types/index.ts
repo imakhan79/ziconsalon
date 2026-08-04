@@ -48,6 +48,12 @@ export interface AuditLog {
   actor?: Profile
 }
 
+export interface CommunicationPreferences {
+  email: boolean
+  sms: boolean
+  whatsapp: boolean
+}
+
 export interface Profile {
   id: string
   full_name: string
@@ -56,6 +62,14 @@ export interface Profile {
   role: UserRole
   is_active: boolean
   branch_id: string | null
+  gender: string | null
+  date_of_birth: string | null
+  preferred_staff_id: string | null
+  allergies: string | null
+  beauty_preferences: string | null
+  communication_preferences: CommunicationPreferences
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
   created_at: string
 }
 
@@ -233,6 +247,30 @@ export interface CustomerMembership {
   expires_at: string
   invoice_id: string | null
   plan?: MembershipPlan
+}
+
+export interface CustomerFavorite {
+  id: string
+  customer_id: string
+  staff_id: string | null
+  service_id: string | null
+  created_at: string
+}
+
+export interface RewardCatalogItem {
+  id: string
+  name: string
+  description: string | null
+  points_cost: number
+  is_active: boolean
+}
+
+export interface CustomerNote {
+  id: string
+  customer_id: string
+  note: string
+  created_by: string | null
+  created_at: string
 }
 
 export interface Notification {

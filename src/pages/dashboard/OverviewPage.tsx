@@ -44,6 +44,15 @@ import {
   Star,
   History,
   Sparkles,
+  Gift,
+  PartyPopper,
+  Trophy,
+  RotateCcw,
+  Download,
+  Phone,
+  MapPin,
+  HeartHandshake,
+  Mail,
 } from "lucide-react"
 import {
   Dialog,
@@ -59,6 +68,9 @@ import type {
   CustomerMembership,
   MembershipPlan,
   Promotion,
+  Branch,
+  RewardCatalogItem,
+  Invoice,
 } from "@/types"
 
 const STATUS_VARIANT: Record<AppointmentStatus, "default" | "success" | "warning" | "destructive" | "outline"> = {
@@ -92,6 +104,7 @@ function CustomerOverview() {
   const [reviewTarget, setReviewTarget] = React.useState<{ id: string; staffId: string | null } | null>(null)
   const [rating, setRating] = React.useState(5)
   const [comment, setComment] = React.useState("")
+  const [contactOpen, setContactOpen] = React.useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ["overview-customer", profile?.id],
@@ -108,6 +121,9 @@ function CustomerOverview() {
         { data: plans },
         { data: offers },
         { data: myReviews },
+        { data: favorites },
+        { data: rewards },
+        { data: branches },
       ] = await Promise.all([
         supabase
           .from("appointments")
@@ -153,6 +169,12 @@ function CustomerOverview() {
           .eq("is_active", true)
           .order("created_at", { ascending: false }),
         supabase.from("reviews").select("appointment_id").eq("customer_id", profile!.id),
+        supabase
+          .from("customer_favorites")
+          .select("*, staff:staff(*, profile:profiles(full_name)), service:services(name)")
+          .eq("customer_id", profile!.id),
+        supabase.from("reward_catalog").select("*").eq("is_active", true).order("points_cost"),
+        supabase.from("branches").select("*").eq("is_active", true).order("name"),
       ])
 
       const serviceCounts: Record<string, number> = {}
@@ -178,6 +200,8 @@ function CustomerOverview() {
         return true
       })
 
+      const lastCompleted = (history ?? []).find((a) => a.status === "completed") ?? null
+
       return {
         upcoming: upcoming ?? [],
         history: history ?? [],
@@ -190,6 +214,10 @@ function CustomerOverview() {
         topServices,
         reviewedAppointmentIds,
         lifetimeSpent,
+        favorites: favorites ?? [],
+        rewards: (rewards ?? []) as RewardCatalogItem[],
+        branches: (branches ?? []) as Branch[],
+        lastCompletedId: lastCompleted?.id ?? null,
       }
     },
   })
@@ -211,6 +239,98 @@ function CustomerOverview() {
     },
     onError: (e: Error) => toast.error(e.message),
   })
+
+  const toggleFavoriteStaff = useMutation({
+    mutationFn: async ({ staffId, isFav }: { staffId: string; isFav: boolean }) => {
+      if (isFav) {
+        const { error } = await supabase
+          .from("customer_favorites")
+          .delete()
+          .eq("customer_id", profile!.id)
+          .eq("staff_id", staffId)
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from("customer_favorites")
+          .insert({ customer_id: profile!.id, staff_id: staffId })
+        if (error) throw error
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["overview-customer"] }),
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const redeemReward = useMutation({
+    mutationFn: async (rewardId: string) => {
+      const { error } = await supabase.rpc("redeem_reward", { p_reward_id: rewardId })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["overview-customer"] })
+      toast.success("Reward redeemed! Show this at the front desk.")
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const claimBirthday = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("claim_birthday_bonus")
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["overview-customer"] })
+      toast.success("Happy birthday! 200 bonus points added.")
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const exportData = () => {
+    if (!data) return
+    const blob = new Blob([JSON.stringify({ profile, ...data }, null, 2)], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "my-ziconsalon-data.json"
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const downloadInvoice = (inv: Invoice) => {
+    const w = window.open("", "_blank")
+    if (!w) return
+    w.document.write(`
+      <html><head><title>${inv.invoice_number}</title></head>
+      <body style="font-family: sans-serif; padding: 40px;">
+        <h1>Ziconsalon</h1>
+        <h2>Invoice ${inv.invoice_number}</h2>
+        <p>Date: ${format(new Date(inv.created_at), "PPP")}</p>
+        <p>Status: ${inv.status}</p>
+        <hr />
+        <p>Subtotal: $${Number(inv.subtotal).toFixed(2)}</p>
+        <p>Discount: -$${Number(inv.discount).toFixed(2)}</p>
+        <p>Tax: +$${Number(inv.tax).toFixed(2)}</p>
+        <h3>Total: $${Number(inv.total).toFixed(2)}</h3>
+      </body></html>
+    `)
+    w.document.close()
+    w.print()
+  }
+
+  const isBirthdayToday =
+    !!profile?.date_of_birth &&
+    (() => {
+      const d = new Date(profile.date_of_birth!)
+      const t = new Date()
+      return d.getUTCMonth() === t.getUTCMonth() && d.getUTCDate() === t.getUTCDate()
+    })()
+
+  const rewardTier = data
+    ? data.loyaltyBalance >= 500
+      ? "Gold"
+      : data.loyaltyBalance >= 100
+        ? "Silver"
+        : "Bronze"
+    : "Bronze"
 
   const submitReview = useMutation({
     mutationFn: async () => {
@@ -253,16 +373,43 @@ function CustomerOverview() {
           </h1>
           <p className="text-sm text-muted-foreground">Here's what's coming up for you.</p>
         </div>
-        <Button asChild size="sm">
-          <Link to="/dashboard/appointments">
-            <Plus className="size-4" /> Book appointment
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild size="sm">
+            <Link to="/dashboard/appointments">
+              <Plus className="size-4" /> Book appointment
+            </Link>
+          </Button>
+          {data.lastCompletedId && (
+            <Button asChild size="sm" variant="outline">
+              <Link to={`/dashboard/appointments?rebook=${data.lastCompletedId}`}>
+                <RotateCcw className="size-4" /> Rebook last visit
+              </Link>
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={exportData}>
+            <Download className="size-4" /> Export my data
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setContactOpen(true)}>
+            <Phone className="size-4" /> Contact salon
+          </Button>
+        </div>
       </div>
+
+      {isBirthdayToday && (
+        <div className="gradient-gold flex items-center justify-between rounded-xl p-4 text-accent-foreground">
+          <div className="flex items-center gap-2">
+            <PartyPopper className="size-5" />
+            <span className="font-medium">Happy birthday! Claim your bonus points on us.</span>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => claimBirthday.mutate()} disabled={claimBirthday.isPending}>
+            Claim 200 points
+          </Button>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={CalendarDays} label="Upcoming appointments" value={data.upcoming.length} />
-        <StatCard icon={Award} label="Loyalty points" value={data.loyaltyBalance} accent="gold" />
+        <StatCard icon={Award} label={`Loyalty points · ${rewardTier}`} value={data.loyaltyBalance} accent="gold" />
         <StatCard icon={Crown} label="Membership" value={data.membership?.plan.name ?? "None"} />
         <StatCard icon={DollarSign} label="Lifetime spent" value={`$${data.lifetimeSpent.toFixed(2)}`} />
       </div>
@@ -277,23 +424,37 @@ function CustomerOverview() {
               No appointments yet. Book one from the Appointments tab.
             </p>
           ) : (
-            data.upcoming.map((a) => (
-              <div
-                key={a.id}
-                className="flex items-center justify-between rounded-lg border border-border/60 bg-background/40 p-3 text-sm transition-colors hover:bg-accent/5"
-              >
-                <div className="flex flex-col">
-                  <span>{format(new Date(a.start_time), "PPp")}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {(a.staff as unknown as { profile: { full_name: string } } | null)?.profile?.full_name ??
-                      "No preference"}
-                  </span>
+            data.upcoming.map((a) => {
+              const staffId = (a.staff as unknown as { id: string } | null)?.id
+              const staffName = (a.staff as unknown as { profile: { full_name: string } } | null)?.profile
+                ?.full_name
+              const isFav = staffId ? data.favorites.some((f) => f.staff_id === staffId) : false
+              return (
+                <div
+                  key={a.id}
+                  className="flex items-center justify-between rounded-lg border border-border/60 bg-background/40 p-3 text-sm transition-colors hover:bg-accent/5"
+                >
+                  <div className="flex flex-col">
+                    <span>{format(new Date(a.start_time), "PPp")}</span>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      {staffName ?? "No preference"}
+                      {staffId && (
+                        <button
+                          type="button"
+                          onClick={() => toggleFavoriteStaff.mutate({ staffId, isFav })}
+                          title={isFav ? "Remove favorite" : "Save as favorite"}
+                        >
+                          <Star className={`size-3 ${isFav ? "fill-accent text-accent" : "text-muted-foreground"}`} />
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                  <Badge variant={STATUS_VARIANT[a.status as AppointmentStatus]} className="capitalize">
+                    {a.status.replace("_", " ")}
+                  </Badge>
                 </div>
-                <Badge variant={STATUS_VARIANT[a.status as AppointmentStatus]} className="capitalize">
-                  {a.status.replace("_", " ")}
-                </Badge>
-              </div>
-            ))
+              )
+            })
           )}
         </CardContent>
       </Card>
@@ -352,6 +513,9 @@ function CustomerOverview() {
                   <Badge variant={INVOICE_VARIANT[inv.status as InvoiceStatus]} className="capitalize">
                     {inv.status}
                   </Badge>
+                  <Button size="sm" variant="ghost" onClick={() => downloadInvoice(inv)} title="Download invoice">
+                    <Download className="size-3.5" />
+                  </Button>
                 </div>
               </div>
             ))}
@@ -426,6 +590,63 @@ function CustomerOverview() {
         </Card>
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <HeartHandshake className="size-4 text-accent" />
+              <CardTitle className="text-base">My favorites</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {data.favorites.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Tap the star next to a stylist to save them as a favorite.
+              </p>
+            )}
+            {data.favorites.map((f) => {
+              const name =
+                (f.staff as unknown as { profile: { full_name: string } } | null)?.profile?.full_name ??
+                (f.service as unknown as { name: string } | null)?.name ??
+                "—"
+              return (
+                <div key={f.id} className="flex items-center justify-between text-sm">
+                  <span>{name}</span>
+                  <Badge variant="outline">{f.staff_id ? "Stylist" : "Service"}</Badge>
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Trophy className="size-4 text-accent" />
+              <CardTitle className="text-base">Redeem rewards</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {data.rewards.map((r) => (
+              <div key={r.id} className="flex items-center justify-between text-sm">
+                <div className="flex flex-col">
+                  <span>{r.name}</span>
+                  <span className="text-xs text-muted-foreground">{r.points_cost} points</span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={data.loyaltyBalance < r.points_cost || redeemReward.isPending}
+                  onClick={() => redeemReward.mutate(r.id)}
+                >
+                  <Gift className="size-3.5" /> Redeem
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -492,6 +713,39 @@ function CustomerOverview() {
                 Submit review
               </Button>
             </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={contactOpen} onOpenChange={setContactOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Contact us</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            {data.branches.length === 0 && (
+              <p className="text-sm text-muted-foreground">No branch contact details available yet.</p>
+            )}
+            {data.branches.map((b) => (
+              <div key={b.id} className="flex flex-col gap-1 rounded-lg border border-border/60 p-3 text-sm">
+                <span className="font-medium">{b.name}</span>
+                {b.phone && (
+                  <a href={`tel:${b.phone}`} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+                    <Phone className="size-3.5" /> {b.phone}
+                  </a>
+                )}
+                {b.email && (
+                  <a href={`mailto:${b.email}`} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+                    <Mail className="size-3.5" /> {b.email}
+                  </a>
+                )}
+                {b.address && (
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <MapPin className="size-3.5" /> {b.address}
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         </DialogContent>
       </Dialog>
