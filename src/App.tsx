@@ -23,6 +23,7 @@ import ReportsPage from "@/pages/dashboard/ReportsPage"
 import SettingsPage from "@/pages/dashboard/SettingsPage"
 import ProfilePage from "@/pages/dashboard/ProfilePage"
 import MyWorkPage from "@/pages/dashboard/MyWorkPage"
+import StaffHRPage from "@/pages/dashboard/StaffHRPage"
 import AdminOverviewPage from "@/pages/admin/OverviewPage"
 import BranchesPage from "@/pages/admin/BranchesPage"
 import UsersPage from "@/pages/admin/UsersPage"
@@ -60,6 +61,7 @@ function App() {
 
                   <Route element={<ProtectedRoute allowedRoles={["admin", "manager"]} />}>
                     <Route path="/dashboard/staff" element={<StaffPage />} />
+                    <Route path="/dashboard/staff-hr" element={<StaffHRPage />} />
                     <Route path="/dashboard/services" element={<ServicesPage />} />
                     <Route path="/dashboard/inventory" element={<InventoryPage />} />
                     <Route path="/dashboard/finance" element={<FinancePage />} />

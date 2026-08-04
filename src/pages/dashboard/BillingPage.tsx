@@ -57,6 +57,7 @@ export default function BillingPage() {
 
   const [viewId, setViewId] = React.useState<string | null>(null)
   const [paymentAmount, setPaymentAmount] = React.useState("")
+  const [paymentTip, setPaymentTip] = React.useState("")
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>("cash")
   const [paymentRef, setPaymentRef] = React.useState("")
 
@@ -155,9 +156,11 @@ export default function BillingPage() {
       const amount = Number(paymentAmount)
       if (!amount || amount <= 0) throw new Error("Enter a valid amount")
 
+      const tip = Number(paymentTip || 0)
       const { error: payErr } = await supabase.from("payments").insert({
         invoice_id: viewInvoice.id,
         amount,
+        tip_amount: tip,
         method: paymentMethod,
         reference: paymentRef || null,
       })
@@ -186,6 +189,7 @@ export default function BillingPage() {
       queryClient.invalidateQueries({ queryKey: ["invoices"] })
       queryClient.invalidateQueries({ queryKey: ["invoice-detail", viewId] })
       setPaymentAmount("")
+      setPaymentTip("")
       setPaymentRef("")
       toast.success("Payment recorded")
     },
@@ -393,7 +397,12 @@ export default function BillingPage() {
                 {(viewInvoice.payments ?? []).map((p) => (
                   <div key={p.id} className="flex justify-between text-sm">
                     <span className="capitalize">{p.method.replace("_", " ")}</span>
-                    <span>${Number(p.amount).toFixed(2)}</span>
+                    <span>
+                      ${Number(p.amount).toFixed(2)}
+                      {Number(p.tip_amount) > 0 && (
+                        <span className="ml-1 text-xs text-accent">+${Number(p.tip_amount).toFixed(2)} tip</span>
+                      )}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -418,6 +427,20 @@ export default function BillingPage() {
                       value={paymentAmount}
                       onChange={(e) => setPaymentAmount(e.target.value)}
                       className="w-24"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="pay-tip" className="text-xs">
+                      Tip
+                    </Label>
+                    <Input
+                      id="pay-tip"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={paymentTip}
+                      onChange={(e) => setPaymentTip(e.target.value)}
+                      className="w-20"
                     />
                   </div>
                   <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>

@@ -73,6 +73,8 @@ export interface Profile {
   created_at: string
 }
 
+export type EmploymentType = "full_time" | "part_time" | "contract"
+
 export interface Staff {
   id: string
   title: string | null
@@ -80,13 +82,33 @@ export interface Staff {
   commission_rate: number
   hired_at: string | null
   bio: string | null
+  qualifications: string | null
+  skills: string | null
+  employment_type: EmploymentType
+  annual_leave_days: number
   profile?: Profile
+}
+
+export interface StaffCompensation {
+  staff_id: string
+  salary: number | null
+  updated_at: string
+}
+
+export interface StaffDocument {
+  id: string
+  staff_id: string
+  name: string
+  file_url: string
+  uploaded_by: string | null
+  created_at: string
 }
 
 export interface ServiceCategory {
   id: string
   name: string
   sort_order: number
+  parent_category_id: string | null
 }
 
 export interface Service {
@@ -98,6 +120,30 @@ export interface Service {
   duration_minutes: number
   price: number
   is_active: boolean
+  gender_focus: "all" | "female" | "male"
+  room: string | null
+  equipment: string | null
+  tax_rate: number
+  commission_override: number | null
+}
+
+export type ShiftType = "morning" | "evening" | "custom" | "rotational"
+
+export interface Shift {
+  id: string
+  staff_id: string
+  branch_id: string | null
+  shift_type: ShiftType
+  start_time: string
+  end_time: string
+  days_of_week: number[]
+}
+
+export interface Holiday {
+  id: string
+  branch_id: string | null
+  name: string
+  date: string
 }
 
 export interface Appointment {
@@ -168,6 +214,7 @@ export interface Payment {
   id: string
   invoice_id: string
   amount: number
+  tip_amount: number
   method: PaymentMethod
   reference: string | null
   paid_at: string

@@ -24,6 +24,7 @@ import {
   SlidersHorizontal,
   DollarSign,
   ClipboardCheck,
+  BadgeCheck,
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useTheme } from "@/contexts/ThemeContext"
@@ -47,6 +48,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard/my-work", label: "My Work", icon: ClipboardCheck, roles: ["admin", "manager", "staff"] },
   { to: "/dashboard/customers", label: "Customers", icon: Users, roles: ["admin", "manager", "staff"] },
   { to: "/dashboard/staff", label: "Staff", icon: UserRound, roles: ["admin", "manager"] },
+  { to: "/dashboard/staff-hr", label: "Staff HR", icon: BadgeCheck, roles: ["admin", "manager"] },
   { to: "/dashboard/services", label: "Services", icon: Scissors, roles: ["admin", "manager"] },
   { to: "/dashboard/billing", label: "Billing", icon: Receipt, roles: ["admin", "manager", "staff"] },
   { to: "/dashboard/inventory", label: "Inventory", icon: Boxes, roles: ["admin", "manager"] },

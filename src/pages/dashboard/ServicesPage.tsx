@@ -49,6 +49,11 @@ const emptyForm = {
   duration_minutes: "30",
   price: "0",
   is_active: true,
+  gender_focus: "all" as "all" | "female" | "male",
+  room: "",
+  equipment: "",
+  tax_rate: "0",
+  commission_override: "",
 }
 
 export default function ServicesPage() {
@@ -57,6 +62,7 @@ export default function ServicesPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [form, setForm] = React.useState(emptyForm)
   const [newCategory, setNewCategory] = React.useState("")
+  const [newCategoryParent, setNewCategoryParent] = React.useState("")
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ["service-categories"],
@@ -89,12 +95,13 @@ export default function ServicesPage() {
     mutationFn: async (name: string) => {
       const { error } = await supabase
         .from("service_categories")
-        .insert({ name, sort_order: categories.length })
+        .insert({ name, sort_order: categories.length, parent_category_id: newCategoryParent || null })
       if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["service-categories"] })
       setNewCategory("")
+      setNewCategoryParent("")
       toast.success("Category added")
     },
     onError: (e: Error) => toast.error(e.message),
@@ -110,6 +117,11 @@ export default function ServicesPage() {
         duration_minutes: Number(values.duration_minutes),
         price: Number(values.price),
         is_active: values.is_active,
+        gender_focus: values.gender_focus,
+        room: values.room || null,
+        equipment: values.equipment || null,
+        tax_rate: Number(values.tax_rate || 0),
+        commission_override: values.commission_override ? Number(values.commission_override) : null,
       }
       if (values.id) {
         const { error } = await supabase.from("services").update(payload).eq("id", values.id)
@@ -155,6 +167,11 @@ export default function ServicesPage() {
       duration_minutes: String(s.duration_minutes),
       price: String(s.price),
       is_active: s.is_active,
+      gender_focus: s.gender_focus,
+      room: s.room ?? "",
+      equipment: s.equipment ?? "",
+      tax_rate: String(s.tax_rate),
+      commission_override: s.commission_override != null ? String(s.commission_override) : "",
     })
     setDialogOpen(true)
   }
@@ -260,6 +277,66 @@ export default function ServicesPage() {
                   />
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="svc-tax">Tax rate %</Label>
+                  <Input
+                    id="svc-tax"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={form.tax_rate}
+                    onChange={(e) => setForm((f) => ({ ...f, tax_rate: e.target.value }))}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="svc-commission">Commission override %</Label>
+                  <Input
+                    id="svc-commission"
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.01"
+                    value={form.commission_override}
+                    onChange={(e) => setForm((f) => ({ ...f, commission_override: e.target.value }))}
+                    placeholder="Uses staff default"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label>Gender focus</Label>
+                  <Select
+                    value={form.gender_focus}
+                    onValueChange={(v) => setForm((f) => ({ ...f, gender_focus: v as typeof form.gender_focus }))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="male">Male</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="svc-room">Room</Label>
+                  <Input
+                    id="svc-room"
+                    value={form.room}
+                    onChange={(e) => setForm((f) => ({ ...f, room: e.target.value }))}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="svc-equipment">Equipment</Label>
+                  <Input
+                    id="svc-equipment"
+                    value={form.equipment}
+                    onChange={(e) => setForm((f) => ({ ...f, equipment: e.target.value }))}
+                  />
+                </div>
+              </div>
               <div className="flex items-center gap-2">
                 <Switch
                   id="svc-active"
@@ -287,12 +364,14 @@ export default function ServicesPage() {
             {categoriesLoading && <span className="text-sm text-muted-foreground">Loading...</span>}
             {categories.map((c) => (
               <Badge key={c.id} variant="secondary">
-                {c.name}
+                {c.parent_category_id
+                  ? `${categories.find((p) => p.id === c.parent_category_id)?.name ?? "?"} › ${c.name}`
+                  : c.name}
               </Badge>
             ))}
           </div>
           <form
-            className="flex gap-2"
+            className="flex flex-wrap gap-2"
             onSubmit={(e) => {
               e.preventDefault()
               if (newCategory.trim()) addCategory.mutate(newCategory.trim())
@@ -304,6 +383,21 @@ export default function ServicesPage() {
               onChange={(e) => setNewCategory(e.target.value)}
               className="max-w-xs"
             />
+            <Select value={newCategoryParent || "none"} onValueChange={(v) => setNewCategoryParent(v === "none" ? "" : v)}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Top-level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Top-level</SelectItem>
+                {categories
+                  .filter((c) => !c.parent_category_id)
+                  .map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      Under {c.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
             <Button type="submit" variant="outline" disabled={addCategory.isPending}>
               Add category
             </Button>
