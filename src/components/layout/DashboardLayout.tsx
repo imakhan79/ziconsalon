@@ -23,6 +23,7 @@ import {
   Plug,
   SlidersHorizontal,
   DollarSign,
+  ClipboardCheck,
 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useTheme } from "@/contexts/ThemeContext"
@@ -42,6 +43,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Overview", icon: LineChart, roles: ["admin", "manager", "staff", "customer"] },
   { to: "/dashboard/appointments", label: "Appointments", icon: CalendarDays, roles: ["admin", "manager", "staff", "customer"] },
+  { to: "/dashboard/my-work", label: "My Work", icon: ClipboardCheck, roles: ["admin", "manager", "staff"] },
   { to: "/dashboard/customers", label: "Customers", icon: Users, roles: ["admin", "manager", "staff"] },
   { to: "/dashboard/staff", label: "Staff", icon: UserRound, roles: ["admin", "manager"] },
   { to: "/dashboard/services", label: "Services", icon: Scissors, roles: ["admin", "manager"] },

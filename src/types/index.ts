@@ -168,6 +168,39 @@ export interface Expense {
   expense_date: string
 }
 
+export type AttendanceStatus = "present" | "absent" | "late" | "half_day" | "overtime" | "leave"
+
+export interface AttendanceRecord {
+  id: string
+  staff_id: string
+  branch_id: string | null
+  work_date: string
+  check_in_time: string | null
+  check_out_time: string | null
+  status: AttendanceStatus
+  created_at: string
+}
+
+export type LeaveStatus = "pending" | "approved" | "rejected"
+
+export interface LeaveRequest {
+  id: string
+  staff_id: string
+  branch_id: string | null
+  start_date: string
+  end_date: string
+  reason: string | null
+  status: LeaveStatus
+  reviewed_by: string | null
+  created_at: string
+  staff?: Profile
+}
+
+export interface StaffService {
+  staff_id: string
+  service_id: string
+}
+
 export interface Promotion {
   id: string
   code: string | null

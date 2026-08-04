@@ -430,6 +430,7 @@ function ReceptionistDashboard() {
 function BranchAdminDashboard() {
   const { profile } = useAuth()
   const branchId = profile?.branch_id ?? null
+  const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
     queryKey: ["overview-branch-admin", branchId],
@@ -450,6 +451,7 @@ function BranchAdminDashboard() {
         { data: lowStockRaw },
         { data: recentInvoices },
         { data: weekInvoices },
+        { data: pendingLeave },
       ] = await Promise.all([
         supabase.from("branches").select("*").eq("id", branchId!).single(),
         supabase
@@ -501,6 +503,12 @@ function BranchAdminDashboard() {
           .eq("branch_id", branchId!)
           .eq("status", "paid")
           .gte("created_at", weekAgoIso),
+        supabase
+          .from("leave_requests")
+          .select("*, staff:profiles!leave_requests_staff_id_fkey(full_name)")
+          .eq("branch_id", branchId!)
+          .eq("status", "pending")
+          .order("created_at", { ascending: true }),
       ])
 
       const todaysApptList = todaysAppts ?? []
@@ -533,8 +541,24 @@ function BranchAdminDashboard() {
         lowStock,
         recentInvoices: recentInvoices ?? [],
         chartData,
+        pendingLeave: pendingLeave ?? [],
       }
     },
+  })
+
+  const reviewLeave = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: "approved" | "rejected" }) => {
+      const { error } = await supabase
+        .from("leave_requests")
+        .update({ status, reviewed_by: profile!.id })
+        .eq("id", id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["overview-branch-admin"] })
+      toast.success("Leave request updated")
+    },
+    onError: (e: Error) => toast.error(e.message),
   })
 
   if (isLoading || !data) {
@@ -702,6 +726,40 @@ function BranchAdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {data.pendingLeave.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Pending leave requests</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {data.pendingLeave.map((r) => (
+              <div
+                key={r.id}
+                className="flex items-center justify-between rounded-lg border border-border/60 bg-background/40 px-3 py-2 text-sm"
+              >
+                <div className="flex flex-col">
+                  <span className="font-medium">
+                    {(r.staff as unknown as { full_name: string } | null)?.full_name ?? "—"}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {format(new Date(r.start_date), "PP")} → {format(new Date(r.end_date), "PP")}
+                    {r.reason ? ` · ${r.reason}` : ""}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => reviewLeave.mutate({ id: r.id, status: "approved" })}>
+                    Approve
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => reviewLeave.mutate({ id: r.id, status: "rejected" })}>
+                    Reject
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {data.lowStock.length > 0 && (
         <Card>
