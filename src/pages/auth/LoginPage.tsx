@@ -7,23 +7,42 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+const DEMO_ACCOUNTS = [
+  { role: "Admin", email: "admin.demo@ziconsalon.app" },
+  { role: "Manager", email: "manager.demo@ziconsalon.app" },
+  { role: "Staff", email: "staff.demo@ziconsalon.app" },
+  { role: "Customer", email: "customer.demo@ziconsalon.app" },
+] as const
+const DEMO_PASSWORD = "Demo@12345"
+
 export default function LoginPage() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [submitting, setSubmitting] = React.useState(false)
+  const [demoRole, setDemoRole] = React.useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmitting(true)
-    const { error } = await signIn(email, password)
-    setSubmitting(false)
+  const doSignIn = async (loginEmail: string, loginPassword: string) => {
+    const { error } = await signIn(loginEmail, loginPassword)
     if (error) {
       toast.error(error)
       return
     }
     navigate("/dashboard")
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
+    await doSignIn(email, password)
+    setSubmitting(false)
+  }
+
+  const handleDemoLogin = async (account: (typeof DEMO_ACCOUNTS)[number]) => {
+    setDemoRole(account.role)
+    await doSignIn(account.email, DEMO_PASSWORD)
+    setDemoRole(null)
   }
 
   return (
@@ -66,6 +85,26 @@ export default function LoginPage() {
           Sign up
         </Link>
       </p>
+
+      <div className="mt-6 flex items-center gap-3 text-xs text-muted-foreground">
+        <div className="h-px flex-1 bg-border" />
+        Try a demo account
+        <div className="h-px flex-1 bg-border" />
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {DEMO_ACCOUNTS.map((account) => (
+          <Button
+            key={account.role}
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={demoRole !== null}
+            onClick={() => handleDemoLogin(account)}
+          >
+            {demoRole === account.role ? "Signing in..." : account.role}
+          </Button>
+        ))}
+      </div>
     </AuthLayout>
   )
 }
