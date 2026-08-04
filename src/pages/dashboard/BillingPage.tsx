@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { format } from "date-fns"
 import { Plus, Trash2, Eye } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import { useBranches } from "@/hooks/useBranches"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -46,8 +47,10 @@ const emptyLine = (): LineItem => ({ description: "", quantity: "1", unit_price:
 
 export default function BillingPage() {
   const queryClient = useQueryClient()
+  const { branches, defaultBranchId } = useBranches()
   const [createOpen, setCreateOpen] = React.useState(false)
   const [customerId, setCustomerId] = React.useState("")
+  const [branchId, setBranchId] = React.useState("")
   const [discount, setDiscount] = React.useState("0")
   const [tax, setTax] = React.useState("0")
   const [lines, setLines] = React.useState<LineItem[]>([emptyLine()])
@@ -101,6 +104,7 @@ export default function BillingPage() {
 
   const resetCreate = () => {
     setCustomerId("")
+    setBranchId(defaultBranchId)
     setDiscount("0")
     setTax("0")
     setLines([emptyLine()])
@@ -116,6 +120,7 @@ export default function BillingPage() {
         .from("invoices")
         .insert({
           customer_id: customerId,
+          branch_id: branchId || null,
           subtotal,
           discount: Number(discount || 0),
           tax: Number(tax || 0),
@@ -182,7 +187,7 @@ export default function BillingPage() {
         <h1 className="font-display text-2xl font-semibold">Billing</h1>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => setBranchId(defaultBranchId)}>
               <Plus /> New invoice
             </Button>
           </DialogTrigger>
@@ -207,6 +212,22 @@ export default function BillingPage() {
                     {customers.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label>Branch</Label>
+                <Select value={branchId} onValueChange={setBranchId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

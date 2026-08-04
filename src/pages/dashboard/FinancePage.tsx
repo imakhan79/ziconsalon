@@ -4,11 +4,19 @@ import { toast } from "sonner"
 import { format, startOfMonth } from "date-fns"
 import { Plus, Trash2, Wallet, TrendingDown, TrendingUp } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import { useBranches } from "@/hooks/useBranches"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,12 +41,14 @@ import type { Expense } from "@/types"
 const emptyForm = {
   category: "",
   description: "",
+  branch_id: "",
   amount: "0",
   expense_date: format(new Date(), "yyyy-MM-dd"),
 }
 
 export default function FinancePage() {
   const queryClient = useQueryClient()
+  const { branches, defaultBranchId } = useBranches()
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [form, setForm] = React.useState(emptyForm)
 
@@ -80,6 +90,7 @@ export default function FinancePage() {
       const { error } = await supabase.from("expenses").insert({
         category: values.category,
         description: values.description || null,
+        branch_id: values.branch_id || null,
         amount: Number(values.amount),
         expense_date: values.expense_date,
       })
@@ -112,7 +123,7 @@ export default function FinancePage() {
         <h1 className="font-display text-2xl font-semibold">Finance</h1>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setForm(emptyForm)}>
+            <Button onClick={() => setForm({ ...emptyForm, branch_id: defaultBranchId })}>
               <Plus /> New expense
             </Button>
           </DialogTrigger>
@@ -144,6 +155,25 @@ export default function FinancePage() {
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>Branch</Label>
+                <Select
+                  value={form.branch_id || "all"}
+                  onValueChange={(v) => setForm((f) => ({ ...f, branch_id: v === "all" ? "" : v }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All branches" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All branches</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">

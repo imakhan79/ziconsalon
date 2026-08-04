@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Plus, Pencil, Trash2 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import { useBranches } from "@/hooks/useBranches"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -43,6 +44,7 @@ const emptyForm = {
   id: "",
   name: "",
   category_id: "",
+  branch_id: "",
   description: "",
   duration_minutes: "30",
   price: "0",
@@ -51,6 +53,7 @@ const emptyForm = {
 
 export default function ServicesPage() {
   const queryClient = useQueryClient()
+  const { branches } = useBranches()
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [form, setForm] = React.useState(emptyForm)
   const [newCategory, setNewCategory] = React.useState("")
@@ -102,6 +105,7 @@ export default function ServicesPage() {
       const payload = {
         name: values.name,
         category_id: values.category_id || null,
+        branch_id: values.branch_id || null,
         description: values.description || null,
         duration_minutes: Number(values.duration_minutes),
         price: Number(values.price),
@@ -146,6 +150,7 @@ export default function ServicesPage() {
       id: s.id,
       name: s.name,
       category_id: s.category_id ?? "",
+      branch_id: s.branch_id ?? "",
       description: s.description ?? "",
       duration_minutes: String(s.duration_minutes),
       price: String(s.price),
@@ -198,6 +203,25 @@ export default function ServicesPage() {
                     {categories.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>Branch</Label>
+                <Select
+                  value={form.branch_id || "all"}
+                  onValueChange={(v) => setForm((f) => ({ ...f, branch_id: v === "all" ? "" : v }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All branches" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All branches</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

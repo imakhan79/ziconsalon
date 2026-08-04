@@ -5,6 +5,7 @@ import { format, addMinutes } from "date-fns"
 import { Plus } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/AuthContext"
+import { useBranches } from "@/hooks/useBranches"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -42,6 +43,7 @@ type StaffOption = Staff & { profile: Profile }
 const emptyForm = {
   customerId: "",
   staffId: "",
+  branchId: "",
   date: "",
   time: "",
   notes: "",
@@ -52,6 +54,7 @@ export default function AppointmentsPage() {
   const { profile: me } = useAuth()
   const isStaffOrAbove = me && ["admin", "manager", "staff"].includes(me.role)
   const queryClient = useQueryClient()
+  const { branches } = useBranches()
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [form, setForm] = React.useState(emptyForm)
 
@@ -116,6 +119,7 @@ export default function AppointmentsPage() {
         .insert({
           customer_id: customerId,
           staff_id: values.staffId || null,
+          branch_id: values.branchId || null,
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
           notes: values.notes || null,
@@ -170,7 +174,7 @@ export default function AppointmentsPage() {
         <h1 className="font-display text-2xl font-semibold">Appointments</h1>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setForm(emptyForm)}>
+            <Button onClick={() => setForm({ ...emptyForm, branchId: me?.branch_id ?? branches[0]?.id ?? "" })}>
               <Plus /> New appointment
             </Button>
           </DialogTrigger>
@@ -205,6 +209,22 @@ export default function AppointmentsPage() {
                   </Select>
                 </div>
               )}
+
+              <div className="flex flex-col gap-2">
+                <Label>Branch</Label>
+                <Select value={form.branchId} onValueChange={(v) => setForm((f) => ({ ...f, branchId: v }))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="flex flex-col gap-2">
                 <Label>Staff (optional)</Label>

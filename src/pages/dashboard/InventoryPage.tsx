@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Plus, Pencil, PackagePlus } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import { useBranches } from "@/hooks/useBranches"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -32,6 +33,7 @@ const emptyForm = {
   sku: "",
   name: "",
   category: "",
+  branch_id: "",
   cost_price: "0",
   sell_price: "0",
   stock_qty: "0",
@@ -41,6 +43,7 @@ const emptyForm = {
 
 export default function InventoryPage() {
   const queryClient = useQueryClient()
+  const { branches, defaultBranchId } = useBranches()
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [form, setForm] = React.useState(emptyForm)
 
@@ -64,6 +67,7 @@ export default function InventoryPage() {
         sku: values.sku || null,
         name: values.name,
         category: values.category || null,
+        branch_id: values.branch_id || null,
         cost_price: Number(values.cost_price),
         sell_price: Number(values.sell_price),
         stock_qty: Number(values.stock_qty),
@@ -119,7 +123,7 @@ export default function InventoryPage() {
   })
 
   const openCreate = () => {
-    setForm(emptyForm)
+    setForm({ ...emptyForm, branch_id: defaultBranchId })
     setDialogOpen(true)
   }
 
@@ -129,6 +133,7 @@ export default function InventoryPage() {
       sku: p.sku ?? "",
       name: p.name,
       category: p.category ?? "",
+      branch_id: p.branch_id ?? "",
       cost_price: String(p.cost_price),
       sell_price: String(p.sell_price),
       stock_qty: String(p.stock_qty),
@@ -185,6 +190,21 @@ export default function InventoryPage() {
                   value={form.category}
                   onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                 />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>Branch</Label>
+                <Select value={form.branch_id} onValueChange={(v) => setForm((f) => ({ ...f, branch_id: v }))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">

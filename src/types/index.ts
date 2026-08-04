@@ -78,6 +78,7 @@ export interface ServiceCategory {
 export interface Service {
   id: string
   category_id: string | null
+  branch_id: string | null
   name: string
   description: string | null
   duration_minutes: number
@@ -113,6 +114,7 @@ export interface Product {
   sku: string | null
   name: string
   category: string | null
+  branch_id: string | null
   cost_price: number
   sell_price: number
   stock_qty: number
@@ -124,6 +126,7 @@ export interface Invoice {
   id: string
   invoice_number: string
   customer_id: string
+  branch_id: string | null
   appointment_id: string | null
   subtotal: number
   discount: number
@@ -160,6 +163,7 @@ export interface Expense {
   id: string
   category: string
   description: string | null
+  branch_id: string | null
   amount: number
   expense_date: string
 }
@@ -168,6 +172,7 @@ export interface Promotion {
   id: string
   code: string | null
   name: string
+  branch_id: string | null
   discount_type: "percent" | "fixed"
   discount_value: number
   starts_at: string | null

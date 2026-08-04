@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { format } from "date-fns"
 import { Plus, Pencil, Trash2, Megaphone } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import { useBranches } from "@/hooks/useBranches"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -43,6 +44,7 @@ const emptyForm = {
   id: "",
   code: "",
   name: "",
+  branch_id: "",
   discount_type: "percent" as "percent" | "fixed",
   discount_value: "0",
   starts_at: "",
@@ -52,6 +54,7 @@ const emptyForm = {
 
 export default function MarketingPage() {
   const queryClient = useQueryClient()
+  const { branches } = useBranches()
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [form, setForm] = React.useState(emptyForm)
 
@@ -72,6 +75,7 @@ export default function MarketingPage() {
       const payload = {
         code: values.code || null,
         name: values.name,
+        branch_id: values.branch_id || null,
         discount_type: values.discount_type,
         discount_value: Number(values.discount_value),
         starts_at: values.starts_at ? new Date(values.starts_at).toISOString() : null,
@@ -117,6 +121,7 @@ export default function MarketingPage() {
       id: p.id,
       code: p.code ?? "",
       name: p.name,
+      branch_id: p.branch_id ?? "",
       discount_type: p.discount_type,
       discount_value: String(p.discount_value),
       starts_at: p.starts_at ? p.starts_at.slice(0, 10) : "",
@@ -166,6 +171,25 @@ export default function MarketingPage() {
                     placeholder="SUMMER10"
                   />
                 </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>Branch</Label>
+                <Select
+                  value={form.branch_id || "all"}
+                  onValueChange={(v) => setForm((f) => ({ ...f, branch_id: v === "all" ? "" : v }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All branches" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All branches</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
