@@ -176,6 +176,7 @@ export default function InventoryPage() {
       queryClient.invalidateQueries({ queryKey: ["products"] })
       queryClient.invalidateQueries({ queryKey: ["expiring-batches"] })
       queryClient.invalidateQueries({ queryKey: ["low-stock-products"] })
+      queryClient.invalidateQueries({ queryKey: ["inventory-valuation"] })
       setWriteOffQty((q) => ({ ...q, [batch.id]: "" }))
       toast.success("Stock written off")
     },
