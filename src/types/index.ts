@@ -593,6 +593,7 @@ export interface Campaign {
   segment_id: string | null
   status: CampaignStatus
   sent_at: string | null
+  budget_cost: number | null
   created_by: string | null
   created_at: string
   segment?: CustomerSegment

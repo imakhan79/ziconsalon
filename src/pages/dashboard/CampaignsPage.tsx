@@ -54,7 +54,14 @@ const STATUS_VARIANT: Record<CampaignStatus, "outline" | "success" | "destructiv
 }
 
 const emptySegmentForm = { name: "", type: "all" as SegmentType, month: "", days: "", min_spend: "" }
-const emptyCampaignForm = { name: "", channel: "email" as CampaignChannel, subject: "", message: "", segment_id: "" }
+const emptyCampaignForm = {
+  name: "",
+  channel: "email" as CampaignChannel,
+  subject: "",
+  message: "",
+  segment_id: "",
+  budget_cost: "",
+}
 
 export default function CampaignsPage() {
   const queryClient = useQueryClient()
@@ -170,6 +177,7 @@ export default function CampaignsPage() {
         subject: values.subject || null,
         message: values.message,
         segment_id: values.segment_id || null,
+        budget_cost: values.budget_cost ? Number(values.budget_cost) : null,
       })
       if (error) throw error
     },
@@ -219,6 +227,7 @@ export default function CampaignsPage() {
           ? "Happy birthday from all of us! Enjoy a special treat on your next visit."
           : "Thank you for being with us this past year — here's to many more!",
       segment_id: segment.id,
+      budget_cost: "",
     })
     setCampaignDialogOpen(true)
   }
@@ -412,6 +421,16 @@ export default function CampaignsPage() {
                     <Label>Message</Label>
                     <Textarea required rows={4} value={campaignForm.message} onChange={(e) => setCampaignForm((f) => ({ ...f, message: e.target.value }))} />
                   </div>
+                  <div className="flex flex-col gap-2">
+                    <Label>Budget cost (Rs, optional — enables ROI tracking)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={campaignForm.budget_cost}
+                      onChange={(e) => setCampaignForm((f) => ({ ...f, budget_cost: e.target.value }))}
+                    />
+                  </div>
                   <DialogFooter>
                     <Button type="submit" disabled={createCampaign.isPending}>
                       {createCampaign.isPending ? "Saving..." : "Save draft"}
@@ -430,6 +449,7 @@ export default function CampaignsPage() {
                 <TableHead>Channel</TableHead>
                 <TableHead>Segment</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Budget</TableHead>
                 <TableHead>Sent</TableHead>
                 <TableHead className="w-20">Send</TableHead>
               </TableRow>
@@ -437,14 +457,14 @@ export default function CampaignsPage() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     Loading...
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && campaigns.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
                     No campaigns yet.
                   </TableCell>
                 </TableRow>
@@ -459,6 +479,7 @@ export default function CampaignsPage() {
                       {c.status}
                     </Badge>
                   </TableCell>
+                  <TableCell>{c.budget_cost != null ? `Rs ${Number(c.budget_cost).toFixed(2)}` : "—"}</TableCell>
                   <TableCell>{c.sent_at ? format(new Date(c.sent_at), "PP") : "—"}</TableCell>
                   <TableCell>
                     <Button
