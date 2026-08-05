@@ -69,7 +69,7 @@ export default function AppointmentsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("appointments")
-        .select("*, customer:profiles!appointments_customer_id_fkey(*), staff:staff(*, profile:profiles(*))")
+        .select("*, customer:profiles!appointments_customer_id_fkey(*), staff:staff(*, profile:profiles!staff_id_fkey(*))")
         .order("start_time", { ascending: false })
       if (error) throw error
       return data as unknown as Appointment[]
@@ -89,7 +89,7 @@ export default function AppointmentsPage() {
   const { data: staffOptions = [] } = useQuery({
     queryKey: ["staff-options"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("staff").select("*, profile:profiles(*)")
+      const { data, error } = await supabase.from("staff").select("*, profile:profiles!staff_id_fkey(*)")
       if (error) throw error
       return data as unknown as StaffOption[]
     },

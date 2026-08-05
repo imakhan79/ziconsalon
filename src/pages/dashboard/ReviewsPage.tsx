@@ -20,7 +20,7 @@ export default function ReviewsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("reviews")
-        .select("*, customer:profiles!reviews_customer_id_fkey(*), staff:staff(*, profile:profiles(*))")
+        .select("*, customer:profiles!reviews_customer_id_fkey(*), staff:staff(*, profile:profiles!staff_id_fkey(*))")
         .order("created_at", { ascending: false })
       if (error) throw error
       return data as unknown as (Review & { staff: { profile: { full_name: string } } | null })[]

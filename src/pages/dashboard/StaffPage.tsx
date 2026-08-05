@@ -67,7 +67,7 @@ export default function StaffPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("staff")
-        .select("*, profile:profiles(*)")
+        .select("*, profile:profiles!staff_id_fkey(*)")
         .order("hired_at", { ascending: false })
       if (error) throw error
       return data as unknown as StaffRow[]

@@ -134,7 +134,7 @@ function CustomerOverview() {
         supabase
           .from("appointments")
           .select(
-            "id, start_time, status, staff:staff(*, profile:profiles(full_name)), items:appointment_items(price, service:services(name))"
+            "id, start_time, status, staff:staff(*, profile:profiles!staff_id_fkey(full_name)), items:appointment_items(price, service:services(name))"
           )
           .eq("customer_id", profile!.id)
           .gte("start_time", nowIso)
@@ -142,7 +142,7 @@ function CustomerOverview() {
         supabase
           .from("appointments")
           .select(
-            "id, start_time, status, staff_id, staff:staff(*, profile:profiles(full_name)), items:appointment_items(price, service:services(name))"
+            "id, start_time, status, staff_id, staff:staff(*, profile:profiles!staff_id_fkey(full_name)), items:appointment_items(price, service:services(name))"
           )
           .eq("customer_id", profile!.id)
           .lt("start_time", nowIso)
@@ -177,7 +177,7 @@ function CustomerOverview() {
         supabase.from("reviews").select("appointment_id").eq("customer_id", profile!.id),
         supabase
           .from("customer_favorites")
-          .select("*, staff:staff(*, profile:profiles(full_name)), service:services(name)")
+          .select("*, staff:staff(*, profile:profiles!staff_id_fkey(full_name)), service:services(name)")
           .eq("customer_id", profile!.id),
         supabase.from("reward_catalog").select("*").eq("is_active", true).order("points_cost"),
         supabase.from("branches").select("*").eq("is_active", true).order("name"),
@@ -1081,7 +1081,7 @@ function ReceptionistDashboard() {
         supabase
           .from("appointments")
           .select(
-            "id, start_time, status, customer:profiles!appointments_customer_id_fkey(full_name, phone), staff:staff(*, profile:profiles(full_name))"
+            "id, start_time, status, customer:profiles!appointments_customer_id_fkey(full_name, phone), staff:staff(*, profile:profiles!staff_id_fkey(full_name))"
           )
           .gte("start_time", todayStartIso)
           .lt("start_time", tomorrowIso)
@@ -1299,7 +1299,7 @@ function BranchAdminDashboard() {
         supabase
           .from("appointments")
           .select(
-            "id, start_time, status, customer:profiles!appointments_customer_id_fkey(full_name), staff:staff(*, profile:profiles(full_name))"
+            "id, start_time, status, customer:profiles!appointments_customer_id_fkey(full_name), staff:staff(*, profile:profiles!staff_id_fkey(full_name))"
           )
           .eq("branch_id", branchId!)
           .gte("start_time", todayStartIso)

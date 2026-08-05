@@ -63,7 +63,7 @@ export default function ProfilePage() {
   const { data: staffOptions = [] } = useQuery({
     queryKey: ["staff-options-profile"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("staff").select("*, profile:profiles(full_name)")
+      const { data, error } = await supabase.from("staff").select("*, profile:profiles!staff_id_fkey(full_name)")
       if (error) throw error
       return data as unknown as (Staff & { profile: Profile })[]
     },

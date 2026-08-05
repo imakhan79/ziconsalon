@@ -19,7 +19,7 @@ export default function AdminPricingPage() {
   const { data: staff = [], isLoading } = useQuery({
     queryKey: ["admin-staff-commission"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("staff").select("*, profile:profiles(*)")
+      const { data, error } = await supabase.from("staff").select("*, profile:profiles!staff_id_fkey(*)")
       if (error) throw error
       return data as unknown as StaffRow[]
     },
