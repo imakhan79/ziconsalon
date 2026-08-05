@@ -2,7 +2,7 @@ import * as React from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { format } from "date-fns"
-import { CalendarDays, Clock, Plus, Trash2 } from "lucide-react"
+import { CalendarDays, Clock, Plus, Trash2, Wallet } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select"
 import type { AttendanceStatus, Profile, ShiftType, Staff } from "@/types"
 
-type StaffRow = Staff & { profile: Profile }
+type StaffRow = Staff & { profile: Profile; compensation: { salary: number | null } | null }
 
 const ATTENDANCE_STATUSES: AttendanceStatus[] = ["present", "absent", "late", "half_day", "overtime", "leave"]
 const STATUS_VARIANT: Record<AttendanceStatus, "success" | "destructive" | "warning" | "outline" | "default"> = {
@@ -45,7 +45,10 @@ export default function StaffHRPage() {
   const { data: staff = [] } = useQuery({
     queryKey: ["staff"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("staff").select("*, profile:profiles(*)").order("hired_at")
+      const { data, error } = await supabase
+        .from("staff")
+        .select("*, profile:profiles!staff_id_fkey(*), compensation:staff_compensation(salary)")
+        .order("hired_at")
       if (error) throw error
       return data as unknown as StaffRow[]
     },
@@ -154,6 +157,39 @@ export default function StaffHRPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["hr-holidays"] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const [payrollEdits, setPayrollEdits] = React.useState<Record<string, { salary: string; commission_rate: string }>>({})
+
+  const payrollValue = (s: StaffRow) =>
+    payrollEdits[s.id] ?? {
+      salary: s.compensation?.salary != null ? String(s.compensation.salary) : "",
+      commission_rate: String(s.commission_rate ?? 0),
+    }
+
+  const savePayroll = useMutation({
+    mutationFn: async (staffId: string) => {
+      const edit = payrollValue(staff.find((s) => s.id === staffId)!)
+      const { error: rateError } = await supabase
+        .from("staff")
+        .update({ commission_rate: Number(edit.commission_rate) || 0 })
+        .eq("id", staffId)
+      if (rateError) throw rateError
+      const { error: salaryError } = await supabase
+        .from("staff_compensation")
+        .upsert({ staff_id: staffId, salary: edit.salary ? Number(edit.salary) : null }, { onConflict: "staff_id" })
+      if (salaryError) throw salaryError
+    },
+    onSuccess: (_data, staffId) => {
+      queryClient.invalidateQueries({ queryKey: ["staff"] })
+      setPayrollEdits((prev) => {
+        const next = { ...prev }
+        delete next[staffId]
+        return next
+      })
+      toast.success("Payroll updated")
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -349,6 +385,83 @@ export default function StaffHRPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Wallet className="size-4 text-accent" />
+            <CardTitle className="text-base">Payroll</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Staff</TableHead>
+                <TableHead>Commission rate (%)</TableHead>
+                <TableHead>Base salary</TableHead>
+                <TableHead className="w-24">Save</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {staff.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    No staff yet.
+                  </TableCell>
+                </TableRow>
+              )}
+              {staff.map((s) => {
+                const value = payrollValue(s)
+                return (
+                  <TableRow key={s.id}>
+                    <TableCell className="font-medium">{s.profile.full_name}</TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step="0.01"
+                        className="h-8 w-24"
+                        value={value.commission_rate}
+                        onChange={(e) =>
+                          setPayrollEdits((prev) => ({
+                            ...prev,
+                            [s.id]: { ...value, commission_rate: e.target.value },
+                          }))
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        className="h-8 w-32"
+                        placeholder="Rs 0.00"
+                        value={value.salary}
+                        onChange={(e) =>
+                          setPayrollEdits((prev) => ({ ...prev, [s.id]: { ...value, salary: e.target.value } }))
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={savePayroll.isPending}
+                        onClick={() => savePayroll.mutate(s.id)}
+                      >
+                        Save
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }
