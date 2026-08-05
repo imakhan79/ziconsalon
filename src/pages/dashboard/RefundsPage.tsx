@@ -102,7 +102,7 @@ export default function RefundsPage() {
               {pending.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium">{r.invoice?.invoice_number}</TableCell>
-                  <TableCell>${Number(r.amount).toFixed(2)}</TableCell>
+                  <TableCell>Rs {Number(r.amount).toFixed(2)}</TableCell>
                   <TableCell className="capitalize">{r.type}</TableCell>
                   <TableCell>{r.requester?.full_name ?? "—"}</TableCell>
                   <TableCell className="max-w-48 truncate">{r.reason ?? "—"}</TableCell>
@@ -150,7 +150,7 @@ export default function RefundsPage() {
               {history.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium">{r.invoice?.invoice_number}</TableCell>
-                  <TableCell>${Number(r.amount).toFixed(2)}</TableCell>
+                  <TableCell>Rs {Number(r.amount).toFixed(2)}</TableCell>
                   <TableCell className="capitalize">{r.refund_method.replace("_", " ")}</TableCell>
                   <TableCell>
                     <Badge variant={STATUS_VARIANT[r.status]} className="capitalize">

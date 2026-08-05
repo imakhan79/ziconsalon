@@ -313,7 +313,7 @@ export default function MarketingPage() {
                   <TableCell>
                     {p.discount_type === "percent"
                       ? `${Number(p.discount_value)}%`
-                      : `$${Number(p.discount_value).toFixed(2)}`}
+                      : `Rs ${Number(p.discount_value).toFixed(2)}`}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {p.starts_at ? format(new Date(p.starts_at), "PP") : "—"} →{" "}

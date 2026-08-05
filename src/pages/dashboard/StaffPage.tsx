@@ -675,9 +675,9 @@ export default function StaffPage() {
                   <TableRow key={row.id}>
                     <TableCell className="font-medium">{row.profile.full_name}</TableCell>
                     <TableCell>{perf?.completed ?? 0}</TableCell>
-                    <TableCell>${(perf?.revenue ?? 0).toFixed(2)}</TableCell>
-                    <TableCell>${(((perf?.revenue ?? 0) * Number(row.commission_rate)) / 100).toFixed(2)}</TableCell>
-                    <TableCell>${(perf?.tips ?? 0).toFixed(2)}</TableCell>
+                    <TableCell>Rs {(perf?.revenue ?? 0).toFixed(2)}</TableCell>
+                    <TableCell>Rs {(((perf?.revenue ?? 0) * Number(row.commission_rate)) / 100).toFixed(2)}</TableCell>
+                    <TableCell>Rs {(perf?.tips ?? 0).toFixed(2)}</TableCell>
                     <TableCell>
                       {avgRating !== "—" && <Star className="mr-1 inline size-3 fill-accent text-accent" />}
                       {avgRating}

@@ -438,7 +438,7 @@ export default function ServicesPage() {
                   <TableCell className="font-medium">{s.name}</TableCell>
                   <TableCell>{categoryName(s.category_id)}</TableCell>
                   <TableCell>{s.duration_minutes} min</TableCell>
-                  <TableCell>${Number(s.price).toFixed(2)}</TableCell>
+                  <TableCell>Rs {Number(s.price).toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge variant={s.is_active ? "success" : "outline"}>
                       {s.is_active ? "Active" : "Inactive"}

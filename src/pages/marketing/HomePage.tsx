@@ -144,7 +144,7 @@ export default function HomePage() {
                     <p className="text-xs text-muted-foreground">{s.duration_minutes} min</p>
                   </div>
                   <span className="font-display text-lg font-semibold text-gradient-luxury">
-                    ${Number(s.price).toFixed(0)}
+                    Rs {Number(s.price).toFixed(0)}
                   </span>
                 </CardContent>
               </Card>

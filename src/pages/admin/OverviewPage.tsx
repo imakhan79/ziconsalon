@@ -104,7 +104,7 @@ export default function AdminOverviewPage() {
         <Stat icon={UserCheck} label="Active Customers" value={data.activeCustomers} accent="gold" />
         <Stat icon={Briefcase} label="Total Staff" value={data.staffCount} />
         <Stat icon={CalendarClock} label="Today's Appointments" value={data.todaysApptCount} />
-        <Stat icon={DollarSign} label="Monthly Revenue" value={`$${data.monthRevenue.toFixed(2)}`} accent="gold" />
+        <Stat icon={DollarSign} label="Monthly Revenue" value={`Rs ${data.monthRevenue.toFixed(2)}`} accent="gold" />
         <Stat icon={Clock3} label="Pending Appointments" value={data.pendingCount} />
         <Stat icon={Plug} label="Active Integrations" value={data.activeIntegrationsCount} />
       </div>
@@ -141,7 +141,7 @@ export default function AdminOverviewPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>{b.apptCount}</TableCell>
-                    <TableCell>${b.revenue.toFixed(2)}</TableCell>
+                    <TableCell>Rs {b.revenue.toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

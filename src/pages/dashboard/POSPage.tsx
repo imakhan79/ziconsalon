@@ -475,10 +475,10 @@ export default function POSPage() {
     const w = window.open("", "_blank")
     if (!w) return
     const itemsHtml = (receiptInvoice.items ?? [])
-      .map((i) => `<tr><td>${i.description}</td><td>${i.quantity}</td><td>$${Number(i.unit_price).toFixed(2)}</td><td>$${Number(i.line_total).toFixed(2)}</td></tr>`)
+      .map((i) => `<tr><td>${i.description}</td><td>${i.quantity}</td><td>Rs ${Number(i.unit_price).toFixed(2)}</td><td>Rs ${Number(i.line_total).toFixed(2)}</td></tr>`)
       .join("")
     const paymentsHtml = (receiptInvoice.payments ?? [])
-      .map((p) => `<tr><td>${PAYMENT_METHOD_LABEL[p.method]}</td><td>$${Number(p.amount).toFixed(2)}</td></tr>`)
+      .map((p) => `<tr><td>${PAYMENT_METHOD_LABEL[p.method]}</td><td>Rs ${Number(p.amount).toFixed(2)}</td></tr>`)
       .join("")
     w.document.write(`
       <html><head><title>${receiptInvoice.invoice_number}</title></head>
@@ -489,11 +489,11 @@ export default function POSPage() {
         <p>Date: ${format(new Date(receiptInvoice.created_at), "PPP p")}</p>
         <table width="100%" cellpadding="4"><thead><tr><th align="left">Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody>${itemsHtml}</tbody></table>
         <hr />
-        <p>Subtotal: $${Number(receiptInvoice.subtotal).toFixed(2)}</p>
-        <p>Discount: -$${Number(receiptInvoice.discount).toFixed(2)}</p>
-        <p>Tax: +$${Number(receiptInvoice.tax).toFixed(2)}</p>
-        <p>Service charge: +$${Number(receiptInvoice.service_charge).toFixed(2)}</p>
-        <h3>Total: $${Number(receiptInvoice.total).toFixed(2)}</h3>
+        <p>Subtotal: Rs ${Number(receiptInvoice.subtotal).toFixed(2)}</p>
+        <p>Discount: -Rs ${Number(receiptInvoice.discount).toFixed(2)}</p>
+        <p>Tax: +Rs ${Number(receiptInvoice.tax).toFixed(2)}</p>
+        <p>Service charge: +Rs ${Number(receiptInvoice.service_charge).toFixed(2)}</p>
+        <h3>Total: Rs ${Number(receiptInvoice.total).toFixed(2)}</h3>
         <table width="100%" cellpadding="4"><thead><tr><th align="left">Payment</th><th>Amount</th></tr></thead><tbody>${paymentsHtml}</tbody></table>
       </body></html>
     `)
@@ -581,7 +581,7 @@ export default function POSPage() {
               )}
               {customerId && storeCreditBalance > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  Store credit available: ${storeCreditBalance.toFixed(2)}
+                  Store credit available: Rs {storeCreditBalance.toFixed(2)}
                 </p>
               )}
             </CardContent>
@@ -616,7 +616,7 @@ export default function POSPage() {
                       className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2 text-left text-sm hover:bg-accent/10"
                     >
                       <span>{s.name}</span>
-                      <span className="text-muted-foreground">${Number(s.price).toFixed(2)}</span>
+                      <span className="text-muted-foreground">Rs {Number(s.price).toFixed(2)}</span>
                     </button>
                   ))}
                   {branchServices.length === 0 && <p className="text-sm text-muted-foreground">No services found.</p>}
@@ -636,7 +636,7 @@ export default function POSPage() {
                       <span>
                         {p.name} <span className="text-xs text-muted-foreground">({p.stock_qty} in stock)</span>
                       </span>
-                      <span className="text-muted-foreground">${Number(p.sell_price).toFixed(2)}</span>
+                      <span className="text-muted-foreground">Rs {Number(p.sell_price).toFixed(2)}</span>
                     </button>
                   ))}
                   {branchProducts.length === 0 && <p className="text-sm text-muted-foreground">No products found.</p>}
@@ -651,7 +651,7 @@ export default function POSPage() {
                       className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2 text-left text-sm hover:bg-accent/10"
                     >
                       <span>{pkg.name}</span>
-                      <span className="text-muted-foreground">${Number(pkg.price).toFixed(2)}</span>
+                      <span className="text-muted-foreground">Rs {Number(pkg.price).toFixed(2)}</span>
                     </button>
                   ))}
                   {branchPackages.length === 0 && <p className="text-sm text-muted-foreground">No packages set up yet.</p>}
@@ -666,7 +666,7 @@ export default function POSPage() {
                       className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2 text-left text-sm hover:bg-accent/10"
                     >
                       <span>{plan.name} ({plan.duration_months}mo, {Number(plan.discount_percent)}% off)</span>
-                      <span className="text-muted-foreground">${Number(plan.price).toFixed(2)}</span>
+                      <span className="text-muted-foreground">Rs {Number(plan.price).toFixed(2)}</span>
                     </button>
                   ))}
                 </TabsContent>
@@ -719,7 +719,7 @@ export default function POSPage() {
                     <TableRow key={inv.id}>
                       <TableCell className="font-medium">{inv.invoice_number}</TableCell>
                       <TableCell>{inv.customer?.full_name ?? inv.walk_in_name ?? "—"}</TableCell>
-                      <TableCell>${Number(inv.total).toFixed(2)}</TableCell>
+                      <TableCell>Rs {Number(inv.total).toFixed(2)}</TableCell>
                       <TableCell>
                         <Badge variant={inv.status === "paid" ? "success" : inv.status === "refunded" ? "outline" : "warning"} className="capitalize">
                           {inv.status}
@@ -767,7 +767,7 @@ export default function POSPage() {
                       </Button>
                     </div>
                   )}
-                  <span className="w-16 text-right">${(l.qty * l.unitPrice).toFixed(2)}</span>
+                  <span className="w-16 text-right">Rs {(l.qty * l.unitPrice).toFixed(2)}</span>
                   <Button type="button" variant="ghost" size="icon" className="size-6" onClick={() => removeLine(l.key)}>
                     <Trash2 className="size-3 text-destructive" />
                   </Button>
@@ -806,11 +806,11 @@ export default function POSPage() {
               </div>
 
               <div className="flex flex-col gap-1 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${cartSubtotal.toFixed(2)}</span></div>
-                {membershipDiscount > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Membership discount</span><span>-${membershipDiscount.toFixed(2)}</span></div>}
-                {couponDiscount > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Coupon</span><span>-${couponDiscount.toFixed(2)}</span></div>}
-                <div className="flex justify-between"><span className="text-muted-foreground">Tax</span><span>${cartTax.toFixed(2)}</span></div>
-                <div className="flex justify-between font-semibold text-base"><span>Total</span><span>${total.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>Rs {cartSubtotal.toFixed(2)}</span></div>
+                {membershipDiscount > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Membership discount</span><span>-Rs {membershipDiscount.toFixed(2)}</span></div>}
+                {couponDiscount > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Coupon</span><span>-Rs {couponDiscount.toFixed(2)}</span></div>}
+                <div className="flex justify-between"><span className="text-muted-foreground">Tax</span><span>Rs {cartTax.toFixed(2)}</span></div>
+                <div className="flex justify-between font-semibold text-base"><span>Total</span><span>Rs {total.toFixed(2)}</span></div>
               </div>
 
               <Separator />
@@ -863,7 +863,7 @@ export default function POSPage() {
 
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">{remaining > 0 ? "Remaining" : "Change due"}</span>
-                <span className={remaining > 0 ? "text-destructive" : ""}>${Math.abs(remaining).toFixed(2)}</span>
+                <span className={remaining > 0 ? "text-destructive" : ""}>Rs {Math.abs(remaining).toFixed(2)}</span>
               </div>
 
               <Button type="button" disabled={checkout.isPending} onClick={() => checkout.mutate()}>
@@ -886,13 +886,13 @@ export default function POSPage() {
                 {(receiptInvoice.items ?? []).map((i) => (
                   <div key={i.id} className="flex justify-between">
                     <span>{i.description} × {i.quantity}</span>
-                    <span>${Number(i.line_total).toFixed(2)}</span>
+                    <span>Rs {Number(i.line_total).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
               <div className="flex justify-between font-semibold">
                 <span>Total</span>
-                <span>${Number(receiptInvoice.total).toFixed(2)}</span>
+                <span>Rs {Number(receiptInvoice.total).toFixed(2)}</span>
               </div>
 
               <Button type="button" variant="outline" onClick={printReceipt}>

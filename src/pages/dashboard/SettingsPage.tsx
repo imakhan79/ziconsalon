@@ -21,7 +21,7 @@ export default function SettingsPage() {
   const { profile } = useAuth()
   const canManage = profile && ["admin", "manager"].includes(profile.role)
   const queryClient = useQueryClient()
-  const [form, setForm] = React.useState({ business_name: "", address: "", phone: "", currency: "USD" })
+  const [form, setForm] = React.useState({ business_name: "", address: "", phone: "", currency: "PKR" })
 
   const { data, isLoading } = useQuery({
     queryKey: ["business-settings"],

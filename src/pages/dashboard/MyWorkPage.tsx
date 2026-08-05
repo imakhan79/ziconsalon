@@ -298,7 +298,7 @@ export default function MyWorkPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={CalendarDays} label="Today's schedule" value={data.todaySchedule.length} />
         <StatCard icon={CalendarDays} label="This week" value={data.weekApptCount} />
-        <StatCard icon={DollarSign} label="Today's earnings" value={`$${data.dailyEarnings.toFixed(2)}`} accent="gold" />
+        <StatCard icon={DollarSign} label="Today's earnings" value={`Rs ${data.dailyEarnings.toFixed(2)}`} accent="gold" />
         <StatCard icon={Users} label="Customers served" value={data.customerHistory.length} />
       </div>
 
@@ -397,7 +397,7 @@ export default function MyWorkPage() {
                     />
                     {s.name}
                   </span>
-                  <span className="text-xs text-muted-foreground">{s.duration_minutes}min · ${Number(s.price).toFixed(2)}</span>
+                  <span className="text-xs text-muted-foreground">{s.duration_minutes}min · Rs {Number(s.price).toFixed(2)}</span>
                 </label>
               )
             })}

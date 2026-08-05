@@ -364,8 +364,8 @@ export default function BillingPage() {
               </div>
 
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal ${subtotal.toFixed(2)}</span>
-                <span className="text-lg font-semibold">Total ${total.toFixed(2)}</span>
+                <span className="text-muted-foreground">Subtotal Rs {subtotal.toFixed(2)}</span>
+                <span className="text-lg font-semibold">Total Rs {total.toFixed(2)}</span>
               </div>
 
               <DialogFooter>
@@ -405,18 +405,18 @@ export default function BillingPage() {
                     <TableRow key={item.id}>
                       <TableCell>{item.description}</TableCell>
                       <TableCell>{item.quantity}</TableCell>
-                      <TableCell>${Number(item.unit_price).toFixed(2)}</TableCell>
-                      <TableCell>${Number(item.line_total).toFixed(2)}</TableCell>
+                      <TableCell>Rs {Number(item.unit_price).toFixed(2)}</TableCell>
+                      <TableCell>Rs {Number(item.line_total).toFixed(2)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
               <div className="flex flex-col items-end gap-1 text-sm">
-                <span>Subtotal: ${Number(viewInvoice.subtotal).toFixed(2)}</span>
-                <span>Discount: -${Number(viewInvoice.discount).toFixed(2)}</span>
-                <span>Tax: +${Number(viewInvoice.tax).toFixed(2)}</span>
-                <span>Service charge: +${Number(viewInvoice.service_charge).toFixed(2)}</span>
-                <span className="font-semibold">Total: ${Number(viewInvoice.total).toFixed(2)}</span>
+                <span>Subtotal: Rs {Number(viewInvoice.subtotal).toFixed(2)}</span>
+                <span>Discount: -Rs {Number(viewInvoice.discount).toFixed(2)}</span>
+                <span>Tax: +Rs {Number(viewInvoice.tax).toFixed(2)}</span>
+                <span>Service charge: +Rs {Number(viewInvoice.service_charge).toFixed(2)}</span>
+                <span className="font-semibold">Total: Rs {Number(viewInvoice.total).toFixed(2)}</span>
               </div>
 
               <Separator />
@@ -430,9 +430,9 @@ export default function BillingPage() {
                   <div key={p.id} className="flex justify-between text-sm">
                     <span className="capitalize">{p.method.replace("_", " ")}</span>
                     <span>
-                      ${Number(p.amount).toFixed(2)}
+                      Rs {Number(p.amount).toFixed(2)}
                       {Number(p.tip_amount) > 0 && (
-                        <span className="ml-1 text-xs text-accent">+${Number(p.tip_amount).toFixed(2)} tip</span>
+                        <span className="ml-1 text-xs text-accent">+Rs {Number(p.tip_amount).toFixed(2)} tip</span>
                       )}
                     </span>
                   </div>
@@ -540,7 +540,7 @@ export default function BillingPage() {
                 <TableRow key={inv.id}>
                   <TableCell className="font-medium">{inv.invoice_number}</TableCell>
                   <TableCell>{inv.customer?.full_name ?? "—"}</TableCell>
-                  <TableCell>${Number(inv.total).toFixed(2)}</TableCell>
+                  <TableCell>Rs {Number(inv.total).toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge variant={STATUS_VARIANT[inv.status]} className="capitalize">
                       {inv.status}

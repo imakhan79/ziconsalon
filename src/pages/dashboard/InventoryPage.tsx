@@ -423,7 +423,7 @@ export default function InventoryPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Inventory value</p>
-              <p className="font-display text-xl font-semibold">${totalValue.toFixed(2)}</p>
+              <p className="font-display text-xl font-semibold">Rs {totalValue.toFixed(2)}</p>
             </div>
           </CardContent>
         </Card>
@@ -556,7 +556,7 @@ export default function InventoryPage() {
                         {p.stock_qty}
                       </span>
                     </TableCell>
-                    <TableCell>${Number(p.sell_price).toFixed(2)}</TableCell>
+                    <TableCell>Rs {Number(p.sell_price).toFixed(2)}</TableCell>
                     <TableCell>
                       <Badge variant={p.is_active ? "success" : "outline"}>
                         {p.is_active ? "Active" : "Inactive"}

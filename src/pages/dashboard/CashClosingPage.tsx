@@ -192,23 +192,23 @@ export default function CashClosingPage() {
             <div className="grid gap-4 sm:grid-cols-4">
               <div>
                 <p className="text-xs text-muted-foreground">Opening float</p>
-                <p className="font-display text-lg font-semibold">${Number(session.opening_float).toFixed(2)}</p>
+                <p className="font-display text-lg font-semibold">Rs {Number(session.opening_float).toFixed(2)}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Cash sales</p>
-                <p className="font-display text-lg font-semibold">${cashSales.toFixed(2)}</p>
+                <p className="font-display text-lg font-semibold">Rs {cashSales.toFixed(2)}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Card sales</p>
-                <p className="font-display text-lg font-semibold">${cardSales.toFixed(2)}</p>
+                <p className="font-display text-lg font-semibold">Rs {cardSales.toFixed(2)}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Other</p>
-                <p className="font-display text-lg font-semibold">${otherSales.toFixed(2)}</p>
+                <p className="font-display text-lg font-semibold">Rs {otherSales.toFixed(2)}</p>
               </div>
             </div>
             <p className="text-sm">
-              Expected drawer balance: <span className="font-semibold">${expectedCash.toFixed(2)}</span>
+              Expected drawer balance: <span className="font-semibold">Rs {expectedCash.toFixed(2)}</span>
             </p>
 
             <form
@@ -230,7 +230,7 @@ export default function CashClosingPage() {
               </div>
               {variance !== null && (
                 <p className={`text-sm ${Math.abs(variance) > 0.01 ? "text-destructive" : "text-accent"}`}>
-                  Variance: {variance >= 0 ? "+" : ""}${variance.toFixed(2)}
+                  Variance: {variance >= 0 ? "+" : ""}Rs {variance.toFixed(2)}
                 </p>
               )}
               <div className="flex flex-col gap-2">
@@ -273,9 +273,9 @@ export default function CashClosingPage() {
                 <TableRow key={s.id}>
                   <TableCell>{format(new Date(s.opened_at), "PP p")}</TableCell>
                   <TableCell>{s.closed_at ? format(new Date(s.closed_at), "PP p") : "—"}</TableCell>
-                  <TableCell>${Number(s.opening_float).toFixed(2)}</TableCell>
-                  <TableCell>{s.counted_cash !== null ? `$${Number(s.counted_cash).toFixed(2)}` : "—"}</TableCell>
-                  <TableCell>{s.bank_deposit_amount !== null ? `$${Number(s.bank_deposit_amount).toFixed(2)}` : "—"}</TableCell>
+                  <TableCell>Rs {Number(s.opening_float).toFixed(2)}</TableCell>
+                  <TableCell>{s.counted_cash !== null ? `Rs ${Number(s.counted_cash).toFixed(2)}` : "—"}</TableCell>
+                  <TableCell>{s.bank_deposit_amount !== null ? `Rs ${Number(s.bank_deposit_amount).toFixed(2)}` : "—"}</TableCell>
                   <TableCell className="capitalize">{s.status}</TableCell>
                 </TableRow>
               ))}

@@ -217,7 +217,7 @@ export default function FinancePage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Revenue this month</p>
-              <p className="font-display text-xl font-semibold">${revenueThisMonth.toFixed(2)}</p>
+              <p className="font-display text-xl font-semibold">Rs {revenueThisMonth.toFixed(2)}</p>
             </div>
           </CardContent>
         </Card>
@@ -228,7 +228,7 @@ export default function FinancePage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Expenses this month</p>
-              <p className="font-display text-xl font-semibold">${expensesThisMonth.toFixed(2)}</p>
+              <p className="font-display text-xl font-semibold">Rs {expensesThisMonth.toFixed(2)}</p>
             </div>
           </CardContent>
         </Card>
@@ -240,7 +240,7 @@ export default function FinancePage() {
             <div>
               <p className="text-xs text-muted-foreground">Net this month</p>
               <p className={`font-display text-xl font-semibold ${netThisMonth < 0 ? "text-destructive" : ""}`}>
-                ${netThisMonth.toFixed(2)}
+                Rs {netThisMonth.toFixed(2)}
               </p>
             </div>
           </CardContent>
@@ -281,7 +281,7 @@ export default function FinancePage() {
                 <TableRow key={e.id}>
                   <TableCell className="font-medium">{e.category}</TableCell>
                   <TableCell>{e.description ?? "—"}</TableCell>
-                  <TableCell>${Number(e.amount).toFixed(2)}</TableCell>
+                  <TableCell>Rs {Number(e.amount).toFixed(2)}</TableCell>
                   <TableCell>{format(new Date(e.expense_date), "PP")}</TableCell>
                   <TableCell>
                     <AlertDialog>

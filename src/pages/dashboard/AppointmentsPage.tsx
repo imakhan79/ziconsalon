@@ -347,7 +347,7 @@ export default function AppointmentsPage() {
                         {s.name}
                       </span>
                       <span className="text-muted-foreground">
-                        {s.duration_minutes}min · ${Number(s.price).toFixed(2)}
+                        {s.duration_minutes}min · Rs {Number(s.price).toFixed(2)}
                       </span>
                     </label>
                   ))}

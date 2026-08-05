@@ -403,10 +403,10 @@ function CustomerOverview() {
         <p>Date: ${format(new Date(inv.created_at), "PPP")}</p>
         <p>Status: ${inv.status}</p>
         <hr />
-        <p>Subtotal: $${Number(inv.subtotal).toFixed(2)}</p>
-        <p>Discount: -$${Number(inv.discount).toFixed(2)}</p>
-        <p>Tax: +$${Number(inv.tax).toFixed(2)}</p>
-        <h3>Total: $${Number(inv.total).toFixed(2)}</h3>
+        <p>Subtotal: Rs ${Number(inv.subtotal).toFixed(2)}</p>
+        <p>Discount: -Rs ${Number(inv.discount).toFixed(2)}</p>
+        <p>Tax: +Rs ${Number(inv.tax).toFixed(2)}</p>
+        <h3>Total: Rs ${Number(inv.total).toFixed(2)}</h3>
       </body></html>
     `)
     w.document.close()
@@ -620,7 +620,7 @@ function CustomerOverview() {
         <StatCard icon={CalendarDays} label="Upcoming appointments" value={data.upcoming.length} />
         <StatCard icon={Award} label={`Loyalty points · ${rewardTier}`} value={data.loyaltyBalance} accent="gold" />
         <StatCard icon={Crown} label="Membership" value={data.membership?.plan.name ?? "None"} />
-        <StatCard icon={DollarSign} label="Lifetime spent" value={`$${data.lifetimeSpent.toFixed(2)}`} />
+        <StatCard icon={DollarSign} label="Lifetime spent" value={`Rs ${data.lifetimeSpent.toFixed(2)}`} />
       </div>
 
       <Card>
@@ -718,7 +718,7 @@ function CustomerOverview() {
               <div key={inv.id} className="flex items-center justify-between text-sm">
                 <span className="font-medium">{inv.invoice_number}</span>
                 <div className="flex items-center gap-2">
-                  <span>${Number(inv.total).toFixed(2)}</span>
+                  <span>Rs {Number(inv.total).toFixed(2)}</span>
                   <Badge variant={INVOICE_VARIANT[inv.status as InvoiceStatus]} className="capitalize">
                     {inv.status}
                   </Badge>
@@ -765,7 +765,7 @@ function CustomerOverview() {
                     <div key={o.id} className="flex items-center justify-between text-sm">
                       <span>{o.name}</span>
                       <span className="font-medium text-accent">
-                        {o.discount_type === "percent" ? `${o.discount_value}% off` : `$${o.discount_value} off`}
+                        {o.discount_type === "percent" ? `${o.discount_value}% off` : `Rs ${o.discount_value} off`}
                       </span>
                     </div>
                   ))}
@@ -878,7 +878,7 @@ function CustomerOverview() {
                   {isCurrent && <Badge variant="success">Active</Badge>}
                 </div>
                 <span className="text-2xl font-semibold">
-                  ${Number(p.price).toFixed(0)}
+                  Rs {Number(p.price).toFixed(0)}
                   <span className="text-sm font-normal text-muted-foreground">/{p.duration_months}mo</span>
                 </span>
                 <p className="text-sm text-muted-foreground">{p.benefits}</p>
@@ -1027,7 +1027,7 @@ function StaffOverview() {
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={CalendarDays} label="Appointments this month" value={data.apptCount} />
-        <StatCard icon={DollarSign} label="Revenue this month" value={`$${data.revenue.toFixed(2)}`} accent="gold" />
+        <StatCard icon={DollarSign} label="Revenue this month" value={`Rs ${data.revenue.toFixed(2)}`} accent="gold" />
         <StatCard icon={Users} label="Total customers" value={data.customerCount} />
         <StatCard icon={AlertTriangle} label="Low stock items" value={data.lowStock.length} />
       </div>
@@ -1177,7 +1177,7 @@ function ReceptionistDashboard() {
         <StatCard icon={CalendarClock} label="Awaiting check-in" value={data.pendingCheckIn} />
         <StatCard icon={LogIn} label="Checked in" value={data.checkedIn} accent="gold" />
         <StatCard icon={CheckCircle2} label="Completed today" value={data.completedToday} />
-        <StatCard icon={Receipt} label="Payments due" value={`$${data.duePaymentsTotal.toFixed(2)}`} />
+        <StatCard icon={Receipt} label="Payments due" value={`Rs ${data.duePaymentsTotal.toFixed(2)}`} />
         <StatCard icon={UserPlus} label="New customers today" value={data.newCustomersToday} />
       </div>
 
@@ -1255,7 +1255,7 @@ function ReceptionistDashboard() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span>${Number(inv.total).toFixed(2)}</span>
+                  <span>Rs {Number(inv.total).toFixed(2)}</span>
                   <Badge variant="warning" className="capitalize">
                     {inv.status}
                   </Badge>
@@ -1459,8 +1459,8 @@ function BranchAdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={CalendarDays} label="Today's appointments" value={data.todaysAppts.length} />
         <StatCard icon={UserCheck} label="Active staff" value={data.activeStaff.length} />
-        <StatCard icon={DollarSign} label="Today's revenue" value={`$${data.todaysRevenue.toFixed(2)}`} accent="gold" />
-        <StatCard icon={Receipt} label="Pending payments" value={`$${data.pendingTotal.toFixed(2)}`} />
+        <StatCard icon={DollarSign} label="Today's revenue" value={`Rs ${data.todaysRevenue.toFixed(2)}`} accent="gold" />
+        <StatCard icon={Receipt} label="Pending payments" value={`Rs ${data.pendingTotal.toFixed(2)}`} />
         <StatCard icon={CheckCircle2} label="Completed today" value={data.completedToday} />
         <StatCard icon={XCircle} label="Cancelled / no-show today" value={data.cancelledToday} />
         <StatCard icon={CalendarDays} label="Appointments this week" value={data.weekApptCount} />
@@ -1558,7 +1558,7 @@ function BranchAdminDashboard() {
                   </span>
                 </div>
                 <div className="flex flex-col items-end">
-                  <span>${Number(inv.total).toFixed(2)}</span>
+                  <span>Rs {Number(inv.total).toFixed(2)}</span>
                   <Badge variant={STATUS_VARIANT[inv.status as keyof typeof STATUS_VARIANT] ?? "outline"} className="capitalize">
                     {inv.status}
                   </Badge>
