@@ -28,6 +28,7 @@ import POSPage from "@/pages/dashboard/POSPage"
 import RefundsPage from "@/pages/dashboard/RefundsPage"
 import CashClosingPage from "@/pages/dashboard/CashClosingPage"
 import VendorsPage from "@/pages/dashboard/VendorsPage"
+import NotificationsPage from "@/pages/dashboard/NotificationsPage"
 import PurchaseOrdersPage from "@/pages/dashboard/PurchaseOrdersPage"
 import StockTransfersPage from "@/pages/dashboard/StockTransfersPage"
 import CampaignsPage from "@/pages/dashboard/CampaignsPage"
@@ -87,6 +88,7 @@ function App() {
                     <Route path="/dashboard/marketing/surveys" element={<SurveysPage />} />
                     <Route path="/dashboard/marketing/reviews" element={<ReviewsPage />} />
                     <Route path="/dashboard/reports" element={<ReportsPage />} />
+                    <Route path="/dashboard/notifications" element={<NotificationsPage />} />
                   </Route>
 
                   <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>

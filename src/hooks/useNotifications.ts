@@ -22,6 +22,11 @@ function playChime() {
   }
 }
 
+export function requestBrowserPushPermission() {
+  if (typeof Notification === "undefined") return Promise.resolve("unsupported" as NotificationPermission)
+  return Notification.requestPermission()
+}
+
 export function useNotifications() {
   const { profile } = useAuth()
   const queryClient = useQueryClient()
@@ -52,6 +57,9 @@ export function useNotifications() {
           queryClient.invalidateQueries({ queryKey: ["notifications", profile.id] })
           playChime()
           toast.info(n.title, { description: n.message ?? undefined })
+          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+            new Notification(n.title, { body: n.message ?? undefined })
+          }
         }
       )
       .subscribe()
