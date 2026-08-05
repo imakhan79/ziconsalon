@@ -2,6 +2,7 @@ import * as React from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import { useAuth } from "@/contexts/AuthContext"
+import { supabase } from "@/lib/supabase"
 import { AuthLayout } from "@/components/layout/AuthLayout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,12 +23,23 @@ export default function LoginPage() {
   const [password, setPassword] = React.useState("")
   const [submitting, setSubmitting] = React.useState(false)
   const [demoRole, setDemoRole] = React.useState<string | null>(null)
+  const [mfaFactorId, setMfaFactorId] = React.useState<string | null>(null)
+  const [mfaCode, setMfaCode] = React.useState("")
 
   const doSignIn = async (loginEmail: string, loginPassword: string) => {
     const { error } = await signIn(loginEmail, loginPassword)
     if (error) {
       toast.error(error)
       return
+    }
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+    if (aal && aal.nextLevel === "aal2" && aal.nextLevel !== aal.currentLevel) {
+      const { data: factors } = await supabase.auth.mfa.listFactors()
+      const totp = factors?.totp?.[0]
+      if (totp) {
+        setMfaFactorId(totp.id)
+        return
+      }
     }
     navigate("/dashboard")
   }
@@ -39,10 +51,49 @@ export default function LoginPage() {
     setSubmitting(false)
   }
 
+  const handleMfaVerify = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!mfaFactorId) return
+    setSubmitting(true)
+    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: mfaFactorId, code: mfaCode })
+    setSubmitting(false)
+    if (error) {
+      toast.error(error.message)
+      return
+    }
+    navigate("/dashboard")
+  }
+
   const handleDemoLogin = async (account: (typeof DEMO_ACCOUNTS)[number]) => {
     setDemoRole(account.role)
     await doSignIn(account.email, DEMO_PASSWORD)
     setDemoRole(null)
+  }
+
+  if (mfaFactorId) {
+    return (
+      <AuthLayout title="Verification required" subtitle="Enter the 6-digit code from your authenticator app">
+        <form onSubmit={handleMfaVerify} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="mfa-code">Authentication code</Label>
+            <Input
+              id="mfa-code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              required
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="123456"
+              autoFocus
+            />
+          </div>
+          <Button type="submit" disabled={submitting || mfaCode.length !== 6} className="mt-2">
+            {submitting ? "Verifying..." : "Verify"}
+          </Button>
+        </form>
+      </AuthLayout>
+    )
   }
 
   return (

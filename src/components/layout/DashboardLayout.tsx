@@ -40,6 +40,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext"
 import { useTheme } from "@/contexts/ThemeContext"
 import { NotificationBell } from "@/components/layout/NotificationBell"
+import { useIdleTimeout } from "@/hooks/useIdleTimeout"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -79,6 +80,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard/notifications", label: "Notifications", icon: Bell, roles: ["admin", "manager"] },
   { to: "/dashboard/profile", label: "Profile", icon: UserCircle, roles: ["admin", "manager", "staff", "customer"] },
   { to: "/dashboard/settings", label: "Settings", icon: Settings, roles: ["admin", "manager", "staff", "customer"] },
+  { to: "/dashboard/security", label: "Security", icon: ShieldCheck, roles: ["admin", "manager", "staff", "customer"] },
 ]
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
@@ -92,6 +94,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
 ]
 
 export default function DashboardLayout() {
+  useIdleTimeout()
   const { profile, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()

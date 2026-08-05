@@ -29,6 +29,7 @@ import RefundsPage from "@/pages/dashboard/RefundsPage"
 import CashClosingPage from "@/pages/dashboard/CashClosingPage"
 import VendorsPage from "@/pages/dashboard/VendorsPage"
 import NotificationsPage from "@/pages/dashboard/NotificationsPage"
+import SecurityPage from "@/pages/dashboard/SecurityPage"
 import PurchaseOrdersPage from "@/pages/dashboard/PurchaseOrdersPage"
 import StockTransfersPage from "@/pages/dashboard/StockTransfersPage"
 import CampaignsPage from "@/pages/dashboard/CampaignsPage"
@@ -63,6 +64,7 @@ function App() {
                   <Route path="/dashboard/appointments" element={<AppointmentsPage />} />
                   <Route path="/dashboard/profile" element={<ProfilePage />} />
                   <Route path="/dashboard/settings" element={<SettingsPage />} />
+                  <Route path="/dashboard/security" element={<SecurityPage />} />
 
                   <Route element={<ProtectedRoute allowedRoles={["admin", "manager", "staff"]} />}>
                     <Route path="/dashboard/customers" element={<CustomersPage />} />
